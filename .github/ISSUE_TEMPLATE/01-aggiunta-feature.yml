@@ -1,5 +1,5 @@
 name: Aggiunta feature
-description: Crea una issue per feature da aggiungere (Ruolo Programmatore)
+description: "Crea una issue per feature da aggiungere (Ruolo Programmatore)"
 title: "[PoC]"
 labels: ["enhancement", "task-programmatore"]
 projects: ["GlitchHub-Team/2"]

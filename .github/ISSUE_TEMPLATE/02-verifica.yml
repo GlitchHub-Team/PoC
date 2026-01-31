@@ -1,5 +1,5 @@
 name: Verifica feature
-description: Crea una issue per la verifica di una feature aggiunta
+description: "Crea una issue per la verifica di una feature aggiunta (Ruolo Verificatore)"
 title: "[PoC]"
 labels: ["enhancement", "task-verificatore"]
 projects: ["GlitchHub-Team/2"]
