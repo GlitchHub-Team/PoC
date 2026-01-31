@@ -1,4 +1,4 @@
-name: Aggiunta feature
+name: Task palestra
 description: Crea una issue per feature da aggiungere
 title: "[PoC]"
 labels: ["enhancement", "task-palestra"]
