@@ -1,0 +1,11 @@
+name: Task amministratore
+description: Crea una task per amministratore relativa al PoC
+title: "[PoC]"
+labels: ["enhancement", "task-amministratore"]
+projects: ["GlitchHub-Team/2"]
+type: task
+body:
+- type: textarea
+  id: description
+  attributes:
+    label: Descrizione della task

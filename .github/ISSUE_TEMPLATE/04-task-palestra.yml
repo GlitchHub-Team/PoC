@@ -1,0 +1,11 @@
+name: Aggiunta feature
+description: Crea una issue per feature da aggiungere
+title: "[PoC]"
+labels: ["enhancement", "task-palestra"]
+projects: ["GlitchHub-Team/2"]
+type: task
+body:
+- type: textarea
+  id: description
+  attributes:
+    label: Descrizione della task

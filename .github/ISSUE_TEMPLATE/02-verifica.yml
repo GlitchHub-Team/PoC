@@ -1,0 +1,11 @@
+name: Verifica feature
+description: Crea una issue per la verifica di una feature aggiunta
+title: "[PoC]"
+labels: ["enhancement", "task-verificatore"]
+projects: ["GlitchHub-Team/2"]
+type: feature
+body:
+- type: textarea
+  id: description
+  attributes:
+    label: Descrizione della feature

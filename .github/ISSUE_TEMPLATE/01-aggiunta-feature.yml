@@ -1,0 +1,11 @@
+name: Aggiunta feature
+description: Crea una issue per feature da aggiungere (Ruolo Programmatore)
+title: "[PoC]"
+labels: ["enhancement", "task-programmatore"]
+projects: ["GlitchHub-Team/2"]
+type: feature
+body:
+- type: textarea
+  id: description
+  attributes:
+    label: Descrizione della feature
