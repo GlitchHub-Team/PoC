@@ -4,6 +4,11 @@ on:
       - labeled
       - unlabeled
 
+permissions:
+  contents: read
+  issues: write
+  repository-projects: write
+  
 jobs:
   call-automation:
     uses: GlitchHub-Team/GlitchHub-Team.github.io/.github/workflows/onLabelIssue.yml@main

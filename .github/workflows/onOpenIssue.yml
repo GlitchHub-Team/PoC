@@ -3,6 +3,11 @@ on:
     types:
       - opened
 
+permissions:
+  contents: read
+  issues: write
+  repository-projects: write
+
 jobs:
   call-automation:
     uses: GlitchHub-Team/GlitchHub-Team.github.io/.github/workflows/onOpenIssue.yml@main
