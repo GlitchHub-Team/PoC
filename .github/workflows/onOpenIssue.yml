@@ -15,3 +15,5 @@ env:
 jobs:
   call-automation:
     uses: GlitchHub-Team/GlitchHub-Team.github.io/.github/workflows/onOpenIssue.yml@main
+    secrets: 
+      inherit

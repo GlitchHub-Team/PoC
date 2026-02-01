@@ -16,3 +16,5 @@ env:
 jobs:
   call-automation:
     uses: GlitchHub-Team/GlitchHub-Team.github.io/.github/workflows/onLabelIssue.yml@main
+    secrets: 
+      inherit
