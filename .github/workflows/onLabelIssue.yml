@@ -1,3 +1,4 @@
+name: "Edit labeled issue's project fields"
 on:
   issues:
     types:
@@ -8,7 +9,10 @@ permissions:
   contents: read
   issues: write
   repository-projects: write
-  
+
+env:
+  GH_TOKEN: ${{ secrets.PROJECT_ACCESS_TOKEN }}
+
 jobs:
   call-automation:
     uses: GlitchHub-Team/GlitchHub-Team.github.io/.github/workflows/onLabelIssue.yml@main

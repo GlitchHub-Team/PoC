@@ -1,3 +1,4 @@
+name: "Edit opened issue's project fields"
 on:
   issues:
     types:
@@ -7,6 +8,9 @@ permissions:
   contents: read
   issues: write
   repository-projects: write
+
+env:
+  GH_TOKEN: ${{ secrets.PROJECT_ACCESS_TOKEN }}
 
 jobs:
   call-automation:
