@@ -1,0 +1,9 @@
+on:
+  issues:
+    types:
+      - labeled
+      - unlabeled
+
+jobs:
+  call-automation:
+    uses: GlitchHub-Team/GlitchHub-Team.github.io/.github/workflows/onLabelIssue.yml@main
