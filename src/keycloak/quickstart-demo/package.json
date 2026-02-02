@@ -1,0 +1,20 @@
+{
+  "name": "keycloak-resource-server",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js",
+    "test": "npm run create-realm && node --test && npm run delete-realm",
+    "create-realm": "node scripts/create-realm.js",
+    "delete-realm": "node scripts/delete-realm.js"
+  },
+  "dependencies": {
+    "@keycloak/keycloak-admin-client": "26.5.2",
+    "express": "^4.18.2",
+    "express-session": "^1.19.0",
+    "keycloak-connect": "26.1.1",
+    "keycloak-js": "^26.2.2"
+  },
+  "devDependencies": {
+    "keycloak-request-token": "^0.1.0"
+  }
+}
