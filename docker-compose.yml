@@ -2,13 +2,18 @@ services:
   nats:
     image: nats:latest
     container_name: nats-server
-    command: ["-js", "-m", "8222", "-c", "/etc/nats/nats.conf"]
+    command: ["-config", "/etc/nats/nats.conf"]
     ports:
       - "4222:4222"
       - "8222:8222"
+    environment:
+      - "NATS_ENCRYPTION_KEY=17556952fcfc80b5661c7b793a7472dfb6c06d493410206c7776d214ed836101"
+      - "DATA_CONSUMER_USERNAME=dataconsumer"
+      - "DATA_CONSUMER_PWD=dataconsumer"
     volumes:
       - ./nats-jetstream/nats.conf:/etc/nats/nats.conf
-      - ./nats-jetstream/nats-data:/data
+      - ./nats-jetstream/nats-data:/etc/nats/data
+      - ./nats-jetstream/certs:/etc/nats/certs
     networks:
       - nats-net
   timescaledb:
