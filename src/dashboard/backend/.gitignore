@@ -1,0 +1,5 @@
+# air folder
+tmp/
+
+# executable
+*.out

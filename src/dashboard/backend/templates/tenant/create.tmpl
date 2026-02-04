@@ -1,0 +1,33 @@
+{{define "templates/tenant/create.tmpl"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crea tenant</title>
+</head>
+<body>
+  <h1>Creazione tenant</h1>
+
+  {{ .result }}
+  <form method="post">
+    <div>
+      <label for="name">Nome</label>
+      <input type="text" id="name" name="Name">
+    </div>
+    
+    <div>
+      <label for="natsid">ID Nats</label>
+      <input type="text" id="natsid" name="NatsID"> 
+    </div>
+
+    <div>
+      <input type="submit" id="submit">
+    </div>
+  </form>
+
+  <a href="/">Torna indietro</a>
+
+</body>
+</html>
+{{end}}

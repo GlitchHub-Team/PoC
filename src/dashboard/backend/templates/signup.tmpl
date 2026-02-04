@@ -1,0 +1,45 @@
+{{define "templates/signup.tmpl"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <h1>Crea utente</h1>
+
+  {{ .result }}
+
+  <form method="post" action="/signup">
+    <div>
+      <label for="tenant_id">Tenant:</label>
+      <select id="tenant_id" name="TenantID">
+        <option value="" disabled selected>Selezionare un Tenant</option>
+        {{range $val := .tenantList}}
+          <option value="{{$val.ID}}">{{$val.Name}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <div>
+      <label for="username">Username</label>
+      <input type="text" id="username" name="Username">
+    </div>
+    
+    <div>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="Password"> 
+    </div>
+
+    <div>
+      <input type="submit" id="submit">
+    </div>
+  </form>
+  
+  <a href="/">Back</a>
+
+</body>
+</html>
+
+{{end}}
