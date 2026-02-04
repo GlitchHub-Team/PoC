@@ -1,0 +1,18 @@
+{
+  "name": "login-demo",
+  "version": "1.0.0",
+  "description": "Login demo for KC",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "keycloak-connect": "26.1.1"
+  }
+}

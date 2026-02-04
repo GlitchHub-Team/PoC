@@ -1,0 +1,72 @@
+services:
+  kc-db:
+    image: postgres:latest
+    container_name: kc-db
+    # restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - PGUSER=postgres
+
+      - POSTGRES_PASSWORD=postgres
+      - PGPASSWORD=postgres
+      - POSTGRES_DB=postgres
+
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pg-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   environment:
+  #     - ADMINER_DEFAULT_SERVER=kc-db
+  #   ports:
+  #     - 8080:8080
+  #   networks:
+  #     - pg-network
+
+  kc:
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      - KC_DB=postgres
+      # host.docker.internal: serve per la comunicazione tra container
+      # :5432 è la porta di PGsql
+      # /postgres è il nome del DB scelto
+      - KC_DB_URL=jdbc:postgresql://host.docker.internal:5432/postgres
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=postgres
+      
+      - KC_HOSTNAME=localhost
+      # - KC_HOSTNAME_STRICT=false
+      # - KC_HOSTNAME_STRICT_HTTPS=false
+
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_ADMIN_USERNAME}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_ADMIN_PASSWORD}
+
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+    
+    ports:
+      - 8080:8080
+    command: start-dev
+    depends_on:
+      - kc-db
+    # networks:
+    #   - pg-network
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  pg-network:
+    driver: bridge
