@@ -1,3 +1,5 @@
+# File per testare le richieste da svolgere all'endpoint API Quickstart
+
 import requests
 
 
