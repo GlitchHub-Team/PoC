@@ -3,9 +3,9 @@ In questa cartella è presente il codice sorgente della Dashboard, creata con An
 
 ## Parti
 La dashboard è composta da:
-- Frontend _(ancora da fare)_
-- Backend
-- Proxy _(ancora da fare, al momento non compare nel compose perché non serve)_
+- Frontend: è ancora da fare, però ho trovato la repo [`cmense/go-gin-ng6-starter`](https://github.com/cmense/go-gin-ng6-starter/tree/master), che mostra come integrare Gin e Angular **versione 6 (molto vecchia!)**. Ancora non ho guardato, ma di sicuro può fornire una base su cui basarsi.
+- Backend: fatto con Gin
+- Proxy: c'è la configurazione nella cartella `proxy`, ma non è utilizzata nel compose perché non serve... intanto lo teniamo per buona misura
 
 Andare nelle relative cartelle per ulteriori informazioni
 
