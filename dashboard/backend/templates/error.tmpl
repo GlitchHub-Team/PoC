@@ -1,0 +1,18 @@
+{{define "templates/error.tmpl"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Errore</title>
+</head>
+<body>
+  <h1>Questa pagina non esiste</h1>
+  <pre>DEBUG: {{.debug}}</pre>
+
+  <p>Fai il login <a href="/login">qui</a></p>
+
+  <p><a href="/">Torna indietro</a></p>
+</body>
+</html>
+{{end}}

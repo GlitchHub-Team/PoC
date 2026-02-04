@@ -1,0 +1,75 @@
+services:
+  auth-db:
+    image: postgres:latest
+    container_name: auth-db
+    # restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - PGUSER=postgres
+
+      - POSTGRES_PASSWORD=postgres
+      - PGPASSWORD=postgres
+      - POSTGRES_DB=auth
+
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pg-network
+    
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  adminer:
+    image: adminer
+    restart: always
+    environment:
+      - ADMINER_DEFAULT_SERVER=auth-db
+    ports:
+      - 8081:8080
+    networks:
+      - pg-network
+    depends_on:
+      - auth-db
+    
+
+  backend:
+    build:
+      context: backend
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:3000"
+    depends_on:
+      - auth-db
+    networks:
+      - pg-network
+    volumes:
+      - ./backend:/app
+
+  # proxy:
+  #   image: nginx
+  #   volumes:
+  #     - type: bind
+  #       source: ./proxy/nginx.conf
+  #       target: /etc/nginx/conf.d/default.conf
+  #       read_only: true
+  #   networks:
+  #     - pg-network
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     backend:
+  #       condition: service_started
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  pg-network:
+    driver: bridge

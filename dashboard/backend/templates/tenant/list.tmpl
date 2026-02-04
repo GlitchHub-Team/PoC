@@ -1,0 +1,25 @@
+{{define "templates/tenant/list.tmpl"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista tenant</title>
+</head>
+<body>
+  <h1>Lista tenant</h1>
+  <p>
+    Ovviamente questa pagina rompe la separazione dei tenant.
+    E' solo una pagina di prova
+  </p>
+  <ul>
+    {{range $val := .tenantList}}
+      <li>{{$val.Name}} (ID NATS: {{$val.NatsID}})</li>
+    {{end}}
+  </ul>
+
+  <a href="/">Torna indietro</a>
+
+</body>
+</html>
+{{end}}
