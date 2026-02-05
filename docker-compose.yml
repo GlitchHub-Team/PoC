@@ -7,13 +7,19 @@ services:
       - "4222:4222"
       - "8222:8222"
     environment:
+      - "SYSTEM_ACCOUNT=AALQCF4M7HNUZXTTUJYH4LYH2KR7XYNOEGACORLW7AQNUVOI46EMWKHE"
       - "NATS_ENCRYPTION_KEY=17556952fcfc80b5661c7b793a7472dfb6c06d493410206c7776d214ed836101"
       - "DATA_CONSUMER_USERNAME=dataconsumer"
       - "DATA_CONSUMER_PWD=dataconsumer"
+      - "GATEWAY1_USERNAME=gateway1"
+      - "GATEWAY1_PWD=gateway1"
+      - "GATEWAY2_USERNAME=gateway2"
+      - "GATEWAY2_PWD=gateway2"
     volumes:
       - ./nats-jetstream/nats.conf:/etc/nats/nats.conf
-      - ./nats-jetstream/nats-data:/etc/nats/data
+      - ./nats-jetstream/jetstream-data:/etc/nats/data
       - ./nats-jetstream/certs:/etc/nats/certs
+      - ./nats-jetstream/jwt-accounts:/etc/nats/jwt-accounts
     networks:
       - nats-net
   timescaledb:

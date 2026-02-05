@@ -18,10 +18,10 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func InitSubscriber(natsURL string, consumerId string, wg *sync.WaitGroup) {
+func InitSubscriber(natsURL string, consumerId string, credsPath string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	nc, err := getNatsConnection(natsURL, "glitchhubteam.it")
+	nc, err := getNatsConnection(natsURL, "glitchhubteam.it", credsPath)
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +50,7 @@ func unmurshallHeartRateData(data []byte) (sensor.HearthRateData, error) {
 	return hrData, nil
 }
 
-func getNatsConnection(natsURL string, servername string) (*nats.Conn, error) {
+func getNatsConnection(natsURL string, servername string, credsPath string) (*nats.Conn, error) {
 	opts := nats.GetDefaultOptions()
 	opts.Url = natsURL
 
@@ -66,6 +66,11 @@ func getNatsConnection(natsURL string, servername string) (*nats.Conn, error) {
 	opts.TLSConfig = &tls.Config{
 		RootCAs:    certPool,
 		ServerName: servername,
+	}
+
+	err = nats.UserCredentials(credsPath)(&opts)
+	if err != nil {
+		return nil, err
 	}
 
 	nc, err := opts.Connect()

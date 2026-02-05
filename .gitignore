@@ -72,3 +72,5 @@ go.work.sum
 *.pem
 *.csr
 *.srl
+*.jwt
+*.creds

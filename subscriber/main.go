@@ -17,7 +17,8 @@ func main() {
 	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		consumerId := fmt.Sprintf("C%d", i+1)
-		go InitSubscriber(*natsURL, consumerId, &wg)
+
+		go InitSubscriber(*natsURL, consumerId, "dataconsumer.creds", &wg)
 	}
 
 	wg.Wait()

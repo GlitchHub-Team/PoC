@@ -14,18 +14,18 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func Init(natsURL string, tenantID string, serialGateway string, wg *sync.WaitGroup) {
+func Init(natsURL string, tenantID string, gatewayId string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	nc, err := getNatsConnection(natsURL, "glitchhubteam.it")
+	nc, err := getNatsConnection(natsURL, "glitchhubteam.it", gatewayId)
 	if err != nil {
 		panic(err)
 	}
 	defer nc.Close()
 
-	start(nc, tenantID, serialGateway)
+	start(nc, tenantID, gatewayId)
 }
 
-func getNatsConnection(natsURL string, servername string) (*nats.Conn, error) {
+func getNatsConnection(natsURL string, servername string, gatewayId string) (*nats.Conn, error) {
 	opts := nats.GetDefaultOptions()
 	opts.Url = natsURL
 
@@ -43,6 +43,21 @@ func getNatsConnection(natsURL string, servername string) (*nats.Conn, error) {
 		ServerName: servername,
 	}
 
+	opts.AsyncErrorCB = func(nc *nats.Conn, sub *nats.Subscription, err error) {
+		log.Printf("[ERRORE ASINCRONO] Gateway %s: %v", gatewayId, err)
+	}
+
+	opts.DisconnectedErrCB = func(nc *nats.Conn, err error) {
+		log.Printf("Gateway %s disconnesso: %v", gatewayId, err)
+	}
+
+	credsPath := fmt.Sprintf("gateway/%s.creds", gatewayId)
+
+	err = nats.UserCredentials(credsPath)(&opts)
+	if err != nil {
+		return nil, err
+	}
+
 	nc, err := opts.Connect()
 	if err != nil {
 		return nil, err
@@ -51,7 +66,7 @@ func getNatsConnection(natsURL string, servername string) (*nats.Conn, error) {
 	return nc, nil
 }
 
-func start(nc *nats.Conn, tenantID string, serialGateway string) {
+func start(nc *nats.Conn, tenantID string, gatewayId string) {
 	for {
 		hrData := sensor.SimulateHeartRate()
 		spO2Data := sensor.SimulateSpO2()
@@ -66,10 +81,16 @@ func start(nc *nats.Conn, tenantID string, serialGateway string) {
 			panic(err)
 		}
 
-		nc.Publish("sensors."+tenantID+"."+serialGateway+".heart_rate", hrMsg)
-		nc.Publish("sensors."+tenantID+"."+serialGateway+".blood_oxygen", spO2Msg)
+		err = nc.Publish("sensors."+tenantID+"."+gatewayId+".heart_rate", hrMsg)
+		if err != nil {
+			log.Fatalf("Errore pubblicazione messaggio: %v", err)
+		}
+		err = nc.Publish("sensors."+tenantID+"."+gatewayId+".blood_oxygen", spO2Msg)
+		if err != nil {
+			log.Fatalf("Errore pubblicazione messaggio: %v", err)
+		}
 
-		fmt.Printf("Gateway %s sent Heart Rate: %d BPM, SpO2: %.1f%%\n", serialGateway, hrData.BPM, spO2Data.SpO2)
+		fmt.Printf("Gateway %s sent Heart Rate: %d BPM, SpO2: %.1f%%\n", gatewayId, hrData.BPM, spO2Data.SpO2)
 
 		time.Sleep(5 * time.Second)
 	}
