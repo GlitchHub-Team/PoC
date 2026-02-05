@@ -26,8 +26,8 @@ La cartella `migrate` invece contiene gli script per portare il database secondo
 
 ## Esecuzione
 
-### Impostazione variabili d'ambiente
-E' fondamentale prendere il file `.example-env` e farne una copia chiamata `.env`, in qui impostare la variabile `SECRET`. La buona prassi vuole che si metta una stringa generata con sistemi crittograficamente sicuri, ma ai fini del PoC si può mettere qualunque cosa. La sicurezza non è priorità del PoC.
+### Variabili d'ambiente
+E' già tutto definito nel `.env` che è pubblico, ma la buona prassi vuole che questi siano privati e ignorati con `.gitignore`
 
 ### Docker compose
 Consiglio di usare il docker compose generale, altrimenti bisogna fare tante modifiche.
