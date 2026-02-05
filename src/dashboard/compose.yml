@@ -41,15 +41,13 @@ services:
   backend:
     build:
       context: backend
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     ports:
-      - "8080:3000"
+      - "3000:3000"
     depends_on:
       - auth-db
     networks:
       - pg-network
-    volumes:
-      - ./backend:/app
 
   # proxy:
   #   image: nginx

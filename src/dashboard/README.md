@@ -10,16 +10,23 @@ La dashboard è composta da:
 Andare nelle relative cartelle per ulteriori informazioni
 
 ## Esecuzione
-- Bisogna avere Docker installato e il Docker Engine dev'essere in esecuzione
+- Bisogna avere Docker installato e il Docker Engine dev'essere in esecuzione (se si usa Docker Desktop, bisogna accenderlo)
 
-- Eseguire questi comandi nella shell
+- La prima volta (oppure ogni volta che si modifica il Dockerfile presente in `dashboard/backend`) eseguire questi comandi nel terminale
+    ```
+    cd src/dashboard
+    docker compose up -d --build
+    ```
+
+- Invece, per tutte le altre esecuzioni, eseguire:
     ```
     cd src/dashboard
     docker compose up -d
     ```
 
 - Con un po' di pazienza si potrà trovare la dashboard su http://localhost:3000
-- Si troverà su http://localhost:8081 la pagina Adminer, uno strumento per gestire il database simile a pgAdmin
+
+- Su http://localhost:8081 si troverà la pagina Adminer, uno strumento per gestire il database simile a pgAdmin
 
 - Per interrompere l'esecuzione:
     ```

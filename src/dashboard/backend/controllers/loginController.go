@@ -78,7 +78,6 @@ func LoginControllerPost(c *gin.Context) {
 	cookie := http.Cookie{
 		Name: "jwt-token",
 		Value: token,
-		Domain: "/",
 		MaxAge: 86400,  
 		Secure: true,
 		SameSite: http.SameSiteStrictMode,

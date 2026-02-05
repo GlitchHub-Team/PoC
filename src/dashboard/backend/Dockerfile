@@ -3,9 +3,10 @@ RUN apk add --no-cache go
 
 WORKDIR /app/
 COPY go.mod go.sum ./
+COPY . .
 RUN go mod download
 
 
 # EXPOSE 3000
 
-ENTRYPOINT go run main.go
+ENTRYPOINT ["go", "run", "."]
