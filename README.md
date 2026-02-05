@@ -14,7 +14,7 @@ Repository principale del Proof of Concept di GlitchHub Team
 
 ## Creazione JWT operator
 - Navigare nella cartella `nats-jetstream/jwt-accounts/operator`
-- Creare file `operator.creds`
+- Creare file `operator.jwt`
 - Inserire credenziali da Bitwarden nella cartella *JWT* e chiamato *Operator*
 - Creare file `operator.key` e inserire chiave privata da Bitwarden nella cartella *JWT* e chiamato *Operator*
 
@@ -39,6 +39,15 @@ Repository principale del Proof of Concept di GlitchHub Team
 - Navigare nella cartella `subscriber/certs`
 - Creare file `ca.pem`
 - Inserire il valore da Bitwarden dalla cartella *Certificati NATS* e chiamato `NATS_CA_PEM`
+
+# NSC
+Strumento CLI per la gestione di utenti, permessi e configurazione di NATS. Per installarlo, seguire le istruzioni ufficiali: [https://docs.nats.io/nats-tools/nsc/installation](https://github.com/nats-io/nsc#install)
+
+## Configurazione NSC
+- Eseguire comando `nsc init`
+- Eseguire comando `nsc import operator --jwt ./nats-jetstream/jwt-accounts/operator/operator.jwt`
+- Eseguire comando `nsc pull -A --ca-cert nats-jetstream/certs/ca.pem` per scaricare account
+- Controlla che l'operator sia stato configurato con `nsc describe operator`
 
 
 # Avvio NATS e database TimeScaleDB
