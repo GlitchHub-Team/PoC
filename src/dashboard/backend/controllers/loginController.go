@@ -35,13 +35,14 @@ func LoginControllerGet(c *gin.Context) {
 
 func LoginControllerPost(c *gin.Context) {
 
+	// Parsing dell'input
 	var authInput models.AuthInput
-
 	if err := c.ShouldBind(&authInput); err != nil {
 		loginControllerShowError(c, err)
 		return
 	}
 
+	// Cerca utente su database 
 	var userFound models.User
 	initializers.DB.Where("username = ?", authInput.Username,
 					).Where("tenant_id = ?", authInput.TenantID,
@@ -52,6 +53,7 @@ func LoginControllerPost(c *gin.Context) {
 		return
 	}
 
+	// Paragona password
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(userFound.Password), []byte(authInput.Password),
 	); err != nil {
@@ -59,6 +61,7 @@ func LoginControllerPost(c *gin.Context) {
 		return
 	}
 
+	// Genera JWT
 	generateToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  userFound.ID,
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
@@ -70,19 +73,18 @@ func LoginControllerPost(c *gin.Context) {
 		return
 	}
 
+	// Invia JWT tramite cookies
+	// NOTA: Questo sistema non è sicuro contro attachi di CSRF, ma non importa per il PoC
 	cookie := http.Cookie{
 		Name: "jwt-token",
 		Value: token,
 		Domain: "/",
-		MaxAge: 86400,  // non è proprio sicurissimo vabbe
+		MaxAge: 86400,  
 		Secure: true,
 		SameSite: http.SameSiteStrictMode,
 		HttpOnly: true,
 	}
-
 	c.SetCookieData(&cookie)
 
-	c.Redirect(http.StatusFound, "/")
-
-	// c.JSON(200, gin.H{"ciao": "po"})
+	c.Redirect(http.StatusFound, "/") // Riporta alla home
 }

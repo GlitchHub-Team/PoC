@@ -5,8 +5,6 @@ import (
     "strings"
 
     "github.com/gin-gonic/gin"
-
-    // "fmt"
 )
 
 func ShowView(c *gin.Context, params gin.H) {

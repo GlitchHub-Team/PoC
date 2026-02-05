@@ -18,17 +18,15 @@ func IndexControllerGet(c *gin.Context) {
 	if userExists == true {
 		user = u.(models.User)
 		body = fmt.Sprintf(
-			"Sei loggato come '%v'. Il tuo tenant è #%v (%v)",
+			"Sei loggato come '%v'. Il tuo tenant è %v",
 			user.Username,
-			user.TenantID,
-			user.Tenant.ID,
+			user.Tenant.Name,
 		)
 	} else {
-		body = "Non hai eseguito il login!!"
+		body = "Non hai eseguito il login"
 	}
 
 	views.ShowView(c, gin.H{
-		"title": "PoC",
 		"body":  body,
 	})
 

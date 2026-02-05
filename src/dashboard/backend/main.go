@@ -19,9 +19,6 @@ func main() {
 
 	initializers.LoadTemplates(router, "templates")
 
-	// router.POST("/auth/signup", controllers.CreateUser)
-	// router.POST("/auth/login", controllers.Login)
-
 	// Pagine accessibili a utenti non autorizzati. Chi è autorizzato viene reindirizzato a /
 	onlyUnauthorized := router.Group("/")
 	onlyUnauthorized.Use(middlewares.PublicPage, middlewares.RedirectAuthorized)
@@ -36,7 +33,7 @@ func main() {
 	// Pagine accessibili a chiunque
 	public := router.Group("/")
 	public.Use(middlewares.PublicPage)
-	{
+	{	// queste parentesi graffe non servono, sono solo per separare visivamente
 		public.GET("/", controllers.IndexControllerGet)
 		public.GET("/logout", controllers.LogoutController)
 		
@@ -50,11 +47,8 @@ func main() {
     private.Use(middlewares.PrivatePage)
     {
         private.GET("/user/profile", controllers.GetUserProfile)
-		
+	
 		private.GET("/tenant", controllers.TenantIndexController)
-		
-		
-		
 	}
 
 	router.Run()

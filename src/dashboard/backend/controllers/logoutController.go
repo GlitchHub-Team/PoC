@@ -7,6 +7,7 @@ import (
 )
 
 func LogoutController(c *gin.Context) {
+	// Rimuove il token JWT
 	c.SetCookieData(&http.Cookie{
 		Name: "jwt-token",
 		MaxAge: -1,
