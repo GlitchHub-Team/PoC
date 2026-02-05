@@ -1,0 +1,34 @@
+{{define "templates/tenant.tmpl"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dati tenant {{.tenant.Name}}</title>
+</head>
+<body>
+  <h1>Dati di {{.tenant.Name}}</h1>
+
+  <h2>Proprietà</h2>
+  <p>
+    <b>Nome</b>: {{.tenant.Name}}
+  </p>
+  <p>
+    <b>ID NATS</b>: {{.tenant.NatsID}}
+  </p>
+
+
+  <h2>Lista utenti</h2>
+  <ul>
+    {{range $val := .userList}}
+      <li>{{$val.Username}} (#{{$val.ID}})</li>
+    {{end}}
+  </ul>
+
+  <hr>
+
+  <a href="/">Torna indietro</a>
+
+</body>
+</html>
+{{end}}

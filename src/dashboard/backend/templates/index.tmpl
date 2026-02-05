@@ -1,0 +1,29 @@
+{{define "templates/index.tmpl"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home PoC</title>
+</head>
+<body>
+  <h1>Home PoC</h1>
+  <p>
+    {{ .body }}
+  </p>
+  <div><a href="/login">Login</a></div>
+  <div><a href="/signup">Signup</a></div>
+  <div><a href="/logout">Logout</a></div>
+  
+  <h2>Profilo</h2>
+  <div><a href="/user/profile">Vedi profilo</a></div>
+  
+  <h2>Tenant</h2>
+  <div><a href="/tenant">Vedi il tuo tenant</a></div>
+  <div><a href="/tenant/list">Vedi tutti i tenant</a></div>
+  <div><a href="/tenant/create">Crea tenant</a></div>
+
+</body>
+</html>
+
+{{end}}
