@@ -19,6 +19,7 @@ Andare nelle relative cartelle per ulteriori informazioni
     ```
 
 - Con un po' di pazienza si potrà trovare la dashboard su http://localhost:3000
+- Si troverà su http://localhost:8081 la pagina Adminer, uno strumento per gestire il database simile a pgAdmin
 
 - Per interrompere l'esecuzione:
     ```
