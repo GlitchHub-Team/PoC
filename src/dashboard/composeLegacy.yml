@@ -1,0 +1,32 @@
+services:
+  auth-db:
+    image: postgres:latest
+    container_name: auth-db
+    # restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - PGUSER=postgres
+
+      - POSTGRES_PASSWORD=postgres
+      - PGPASSWORD=postgres
+      - POSTGRES_DB=auth
+
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pg-network
+    
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  
+
+networks:
+  pg-network:
+    driver: bridge

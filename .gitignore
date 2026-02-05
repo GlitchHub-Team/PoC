@@ -65,10 +65,3 @@ go.work.sum
 
 # NATS JetStream ####################################################################################
 /nats-jetstream/nats-data/*
-
-# SSL/TLS certificates, keys and other stuff ####################################################################################
-*.key
-*.crt
-*.pem
-*.csr
-*.srl

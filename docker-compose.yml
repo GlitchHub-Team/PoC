@@ -16,12 +16,13 @@ services:
       - "GATEWAY2_USERNAME=gateway2"
       - "GATEWAY2_PWD=gateway2"
     volumes:
-      - ./nats-jetstream/nats.conf:/etc/nats/nats.conf
-      - ./nats-jetstream/jetstream-data:/etc/nats/data
-      - ./nats-jetstream/certs:/etc/nats/certs
-      - ./nats-jetstream/jwt-accounts:/etc/nats/jwt-accounts
+      - ./src/nats-jetstream/nats.conf:/etc/nats/nats.conf
+      - ./src/nats-jetstream/jetstream-data:/etc/nats/data
+      - ./src/nats-jetstream/certs:/etc/nats/certs
+      - ./src/nats-jetstream/jwt-accounts:/etc/nats/jwt-accounts
     networks:
-      - nats-net
+      - poc-net
+
   timescaledb:
     image: timescale/timescaledb:latest-pg16
     container_name: timescaledb
@@ -34,8 +35,46 @@ services:
     volumes:
       - ./database/timescale-data:/var/lib/postgresql/data
     networks:
-      - nats-net
+      - poc-net
+    
+  dashboard-backend:
+    build:
+      context: src/dashboard/backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - timescaledb
+    networks:
+      - poc-net
+
+  # proxy:
+  #   image: nginx
+  #   volumes:
+  #     - type: bind
+  #       source: ./proxy/nginx.conf
+  #       target: /etc/nginx/conf.d/default.conf
+  #       read_only: true
+  #   networks:
+  #     - pg-network
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     backend:
+  #       condition: service_started
+
+  adminer:
+    image: adminer
+    restart: always
+    environment:
+      - ADMINER_DEFAULT_SERVER=timescaledb
+    ports:
+      - 8081:8080
+    depends_on:
+      - timescaledb
+    networks:
+      - poc-net
       
 networks:
-  nats-net:
+  poc-net:
     driver: bridge
