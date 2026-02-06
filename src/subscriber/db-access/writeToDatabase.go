@@ -27,12 +27,11 @@ func InsertHeartRateData(tenantId string, tablename string, gatewayId string, hr
 	defer conn.Close(context.Background())
 
 	query := fmt.Sprintf("INSERT INTO %s (time, gateway_id, bpm) VALUES ($1, $2, $3)", tablename)
-	tag, err := conn.Exec(context.Background(), query, hrData.Timestamp, gatewayId, hrData.BPM)
+	_, err = conn.Exec(context.Background(), query, hrData.Timestamp, gatewayId, hrData.BPM)
 
 	if err != nil {
 		return fmt.Errorf("Inserimento fallito: %v", err)
 	}
-	fmt.Printf("Inserimento riuscito: %d righe interessate\n", tag.RowsAffected())
 	return nil
 }
 
@@ -50,11 +49,10 @@ func InsertSpO2Data(tenantId string, tablename string, gatewayId string, spO2Dat
 	defer conn.Close(context.Background())
 
 	query := fmt.Sprintf("INSERT INTO %s (time, gateway_id, spO2) VALUES ($1, $2, $3)", tablename)
-	tag, err := conn.Exec(context.Background(), query, spO2Data.Timestamp, gatewayId, spO2Data.SpO2)
+	_, err = conn.Exec(context.Background(), query, spO2Data.Timestamp, gatewayId, spO2Data.SpO2)
 
 	if err != nil {
 		return fmt.Errorf("Inserimento fallito: %v", err)
 	}
-	fmt.Printf("Inserimento riuscito: %d righe interessate\n", tag.RowsAffected())
 	return nil
 }

@@ -27,7 +27,49 @@ func InitSubscriber(natsURL string, consumerId string, credsPath string, wg *syn
 	}
 	defer nc.Close()
 
-	start(nc, consumerId)
+	js, err := configStream(nc)
+	if err != nil {
+		log.Fatalf("Errore creazione contesto JetStream: %v", err)
+	}
+
+	start(&js, consumerId)
+	nc.Drain()
+}
+
+func configStream(nc *nats.Conn) (nats.JetStreamContext, error) {
+	streamConfig := &nats.StreamConfig{
+		Name:     "CONSUMING_SENSORS",
+		Subjects: []string{"sensors.>"},
+		Sources: []*nats.StreamSource{
+			{
+				Name:          "ExportTenant1Data",
+				FilterSubject: "sensors.tenant_1.>",
+				External: &nats.ExternalStream{
+					APIPrefix: "tenant_1.$JS.API",
+				},
+			},
+			{
+				Name:          "ExportTenant2Data",
+				FilterSubject: "sensors.tenant_2.>",
+				External: &nats.ExternalStream{
+					APIPrefix: "tenant_2.$JS.API",
+				},
+			},
+		},
+		Retention: nats.WorkQueuePolicy,
+	}
+
+	js, err := nc.JetStream()
+	if err != nil {
+		return nil, fmt.Errorf("errore ottenimento JetStream: %v", err)
+	}
+
+	_, err = js.AddStream(streamConfig)
+	if err != nil {
+		return nil, fmt.Errorf("errore creazione stream: %v", err)
+	}
+
+	return js, nil
 }
 
 func unmurshallSpo2Data(data []byte) (sensor.PulseOxData, error) {
@@ -81,13 +123,13 @@ func getNatsConnection(natsURL string, servername string, credsPath string) (*na
 	return nc, nil
 }
 
-func start(nc *nats.Conn, consumerId string) {
+func start(js *nats.JetStreamContext, consumerId string) {
 	queueName := "sensor-subscribers"
 	subject := "sensors.>"
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
-	sub, err := nc.QueueSubscribe(subject, queueName, func(msg *nats.Msg) {
+	sub, err := (*js).QueueSubscribe(subject, queueName, func(msg *nats.Msg) {
 		subjectParts := strings.Split(msg.Subject, ".")
 		if len(subjectParts) < 4 {
 			fmt.Printf("Subject non valido: %s\n", msg.Subject)
@@ -138,5 +180,4 @@ func start(nc *nats.Conn, consumerId string) {
 	<-sigCh
 
 	fmt.Println("\nChiusura in corso...")
-	nc.Drain()
 }
