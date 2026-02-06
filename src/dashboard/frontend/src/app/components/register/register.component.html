@@ -1,0 +1,130 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h2>Register</h2>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <!-- Tenant Dropdown -->
+      <div class="form-group">
+        <label for="TenantID">Organization</label>
+        <select
+          id="TenantID"
+          formControlName="TenantID"
+          [class.error]="registerForm.get('TenantID')?.invalid && registerForm.get('TenantID')?.touched"
+          [disabled]="isLoadingTenants()"
+        >
+          @if (isLoadingTenants()) {
+            <option value="">Loading organizations...</option>
+          } @else if (tenantError()) {
+            <option value="">Error loading organizations</option>
+          } @else {
+            <option value="">Select your organization</option>
+            @for (tenant of tenants(); track tenant.id) {
+              <option [value]="tenant.id">
+                {{ tenant.name }} ({{ tenant.natsId }})
+              </option>
+            }
+          }
+        </select>
+
+        @if (registerForm.get('TenantID')?.invalid && registerForm.get('TenantID')?.touched) {
+          <span class="error-message">Please select an organization</span>
+        }
+
+        @if (tenantError()) {
+          <div class="error-with-retry">
+            <span class="error-message">{{ tenantError() }}</span>
+            <button type="button" class="retry-btn" (click)="retryLoadTenants()">
+              Retry
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label for="Username">Username</label>
+        <input
+          type="text"
+          id="Username"
+          formControlName="Username"
+          placeholder="Choose a username"
+          [class.error]="registerForm.get('Username')?.invalid && registerForm.get('Username')?.touched"
+        />
+
+        @if (registerForm.get('Username')?.touched) {
+          @if (registerForm.get('Username')?.hasError('required')) {
+            <span class="error-message">Username is required</span>
+          } @else if (registerForm.get('Username')?.hasError('minlength')) {
+            <span class="error-message">Username must be at least 3 characters</span>
+          } @else if (registerForm.get('Username')?.hasError('maxlength')) {
+            <span class="error-message">Username cannot exceed 50 characters</span>
+          }
+        }
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="Password">Password</label>
+        <input
+          type="password"
+          id="Password"
+          formControlName="Password"
+          placeholder="Create a password"
+          [class.error]="registerForm.get('Password')?.invalid && registerForm.get('Password')?.touched"
+        />
+
+        @if (registerForm.get('Password')?.touched) {
+          @if (registerForm.get('Password')?.hasError('required')) {
+            <span class="error-message">Password is required</span>
+          } @else if (registerForm.get('Password')?.hasError('minlength')) {
+            <span class="error-message">Password must be at least 6 characters</span>
+          }
+        }
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="ConfirmPassword">Confirm Password</label>
+        <input
+          type="password"
+          id="ConfirmPassword"
+          formControlName="ConfirmPassword"
+          placeholder="Confirm your password"
+          [class.error]="registerForm.get('ConfirmPassword')?.invalid && registerForm.get('ConfirmPassword')?.touched"
+        />
+
+        @if (registerForm.get('ConfirmPassword')?.touched) {
+          @if (registerForm.get('ConfirmPassword')?.hasError('required')) {
+            <span class="error-message">Please confirm your password</span>
+          } @else if (registerForm.get('ConfirmPassword')?.hasError('passwordMismatch')) {
+            <span class="error-message">Passwords do not match</span>
+          }
+        }
+      </div>
+
+      <!-- Server Error -->
+      @if (submitError()) {
+        <div class="error-message server-error">
+          {{ submitError() }}
+        </div>
+      }
+
+      <!-- Submit Button -->
+      <button 
+        type="submit" 
+        [disabled]="registerForm.invalid || isSubmitting() || isLoadingTenants()"
+      >
+        @if (isSubmitting()) {
+          <span class="spinner"></span>
+          Creating account...
+        } @else {
+          Register
+        }
+      </button>
+    </form>
+
+    <p class="auth-link">
+      Already have an account? <a routerLink="/login">Login</a>
+    </p>
+  </div>
+</div>

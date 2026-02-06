@@ -40,8 +40,8 @@ services:
 
   backend:
     build:
-      context: backend
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8080:3000"
     depends_on:

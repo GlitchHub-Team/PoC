@@ -16,8 +16,27 @@ func init() {
 
 func main() {
 	router := gin.Default()
+	// Imposta CORS in maniera globale
+	router.Use(middlewares.CORSMiddleware());
 
 	initializers.LoadTemplates(router, "templates")
+
+	// ============ API Routes (for Angular) ============
+	api := router.Group("/api")
+	{
+		// Public API routes
+		api.POST("/login", controllers.LoginAPI)
+		api.POST("/register", controllers.RegisterAPI)
+		api.GET("/tenants", controllers.GetTenantsAPI)
+
+		// Protected API routes
+		protected := api.Group("/")
+		protected.Use(middlewares.APIAuthMiddleware())
+		{
+			protected.GET("/user/profile", controllers.GetUserProfileAPI)
+			// ...
+		}
+	}
 
 	// router.POST("/auth/signup", controllers.CreateUser)
 	// router.POST("/auth/login", controllers.Login)
