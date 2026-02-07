@@ -19,7 +19,7 @@ func InsertHeartRateData(tenantId string, tablename string, gatewayId string, hr
 	}
 
 	tenantUsername := fmt.Sprintf("%s_user", tenantId)
-	urlExample := fmt.Sprintf("postgres://%s:user@localhost:5432/sensors_db", tenantUsername)
+	urlExample := fmt.Sprintf("postgres://%s:user@localhost:5432/sensors_db?sslmode=disable", tenantUsername)
 	conn, err := pgx.Connect(context.Background(), urlExample)
 	if err != nil {
 		return fmt.Errorf("impossibile connettersi al database: %v", err)
