@@ -1,3 +1,6 @@
+/**
+ * Type custom per l'oggetto tenant
+ */
 export interface Tenant {
   id: number;
   natsId: string;

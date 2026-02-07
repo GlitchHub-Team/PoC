@@ -1,5 +1,8 @@
 import { Tenant } from './tenant.model';
 
+/**
+ * Type custom per l'oggetto utente
+ */
 export interface User {
   id: number;
   tenantId: number;
