@@ -49,20 +49,20 @@ services:
     networks:
       - poc-net
 
-  # proxy:
-  #   image: nginx
-  #   volumes:
-  #     - type: bind
-  #       source: ./proxy/nginx.conf
-  #       target: /etc/nginx/conf.d/default.conf
-  #       read_only: true
-  #   networks:
-  #     - pg-network
-  #   ports:
-  #     - 80:80
-  #   depends_on:
-  #     backend:
-  #       condition: service_started
+  proxy:
+    image: nginx
+    volumes:
+      - type: bind
+        source: ./src/dashboard/proxy/nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+    networks:
+      - poc-net
+    ports:
+      - 80:80
+    depends_on:
+      dashboard-backend:
+        condition: service_started
 
   adminer:
     image: adminer

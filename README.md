@@ -71,3 +71,6 @@ La dashboard `NATS - Minimal` misura metriche di NATS (via exporter), non metric
 
 ## Nota importante su /metrics
 Su questa configurazione NATS non espone `http://localhost:8222/metrics` (può rispondere `404`): Prometheus legge le metriche tramite `nats-exporter` (`http://localhost:7777/metrics`).
+
+# Dashboard
+Con l'avvio del file compose, la dashboard sarà accessibile all'indirizzo `http://localhost`

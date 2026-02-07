@@ -24,7 +24,7 @@ Andare nelle relative cartelle per ulteriori informazioni
     docker compose up -d
     ```
 
-- Con un po' di pazienza si potrà trovare la dashboard su http://localhost:3000
+- Con un po' di pazienza si potrà trovare la dashboard su http://localhost:3001
 
 - Su http://localhost:8081 si troverà la pagina Adminer, uno strumento per gestire il database simile a pgAdmin
 
