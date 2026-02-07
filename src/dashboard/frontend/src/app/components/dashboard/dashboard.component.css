@@ -343,3 +343,99 @@
     display: none;
   }
 }
+
+/* Sensors Table */
+.table-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.sensors-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sensors-table th,
+.sensors-table td {
+  padding: 14px 20px;
+  text-align: left;
+}
+
+.sensors-table th {
+  background: #f9fafb;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sensors-table td {
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #1f2937;
+}
+
+.sensors-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.sensors-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.sensors-table .sensor-name {
+  font-weight: 600;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .sensors-table {
+    min-width: 500px;
+  }
+
+  .sensors-table th,
+  .sensors-table td {
+    padding: 12px 16px;
+  }
+}

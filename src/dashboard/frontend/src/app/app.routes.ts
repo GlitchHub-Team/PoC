@@ -26,6 +26,10 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'sensor/:sensorId',
+    loadComponent: () => import('./components/sensor-widget/sensor-widget.component').then(m => m.SensorWidgetComponent),
+  },
+  {
     path: '**',
     redirectTo: '/login'
   }
