@@ -5,7 +5,11 @@ import (
 	"gin-test/initializers"
 	"gin-test/middlewares"
 	"gin-test/migrate"
+	"log"
+	"time"
+
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 )
 
 func init() {
@@ -17,9 +21,22 @@ func init() {
 func main() {
 	router := gin.Default()
 	// Imposta CORS in maniera globale
-	router.Use(middlewares.CORSMiddleware());
+	router.Use(middlewares.CORSMiddleware())
 
 	initializers.LoadTemplates(router, "templates")
+
+	//  NATS
+	nc, err := nats.Connect("ws://localhost:443",
+		nats.UserCredentials("../../web-socket-client/wsTenant1.creds"),
+		nats.RootCAs("../../web-socket-client/certs/ca.pem"),
+		nats.Timeout(10*time.Second),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer nc.Close()
+
+	controllers.NatsConn = nc
 
 	// ============ API Routes (for Angular) ============
 	api := router.Group("/api")
@@ -47,7 +64,7 @@ func main() {
 	{
 		onlyUnauthorized.GET("/login", controllers.LoginControllerGet)
 		onlyUnauthorized.POST("/login", controllers.LoginControllerPost)
-		
+
 		onlyUnauthorized.GET("/signup", controllers.SignupControllerGet)
 		onlyUnauthorized.POST("/signup", controllers.SignupControllerPost)
 	}
@@ -55,21 +72,22 @@ func main() {
 	// Pagine accessibili a chiunque
 	public := router.Group("/")
 	public.Use(middlewares.PublicPage)
-	{	// queste parentesi graffe non servono, sono solo per separare visivamente
+	{ // queste parentesi graffe non servono, sono solo per separare visivamente
 		public.GET("/", controllers.IndexControllerGet)
 		public.GET("/logout", controllers.LogoutController)
-		
+
 		public.GET("/tenant/create", controllers.TenantCreateGet)
 		public.POST("/tenant/create", controllers.TenantCreatePost)
 		public.GET("/tenant/list", controllers.TenantListController)
+		public.GET("/ws/sensors/:tenant", controllers.SensorStream) // <-- lo messo qui per testyate
 	}
 
-    // Pagine accessibili a utenti autorizzati
-    private := router.Group("/")
-    private.Use(middlewares.PrivatePage)
-    {
-        private.GET("/user/profile", controllers.GetUserProfile)
-	
+	// Pagine accessibili a utenti autorizzati
+	private := router.Group("/")
+	private.Use(middlewares.PrivatePage)
+	{
+		private.GET("/user/profile", controllers.GetUserProfile)
+
 		private.GET("/tenant", controllers.TenantIndexController)
 	}
 
