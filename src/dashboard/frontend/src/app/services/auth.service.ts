@@ -8,35 +8,60 @@ import { LoginRequest } from '../models/login-request.model';
 import { RegisterRequest } from '../models/register-request.model';
 import { AuthResponse } from '../models/auth-response.model';
 
+/**
+ * Servizio di autenticazione dell'applicazione.
+ * Gestisce login, registrazione, logout e persistenza della sessione utente.
+ * 
+ * Utilizza Angular Signals per lo stato reattivo e localStorage
+ * per mantenere la sessione attiva tra i refresh della pagina.
+ * La validità del token JWT viene verificata controllando la sua scadenza.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+  // URL base delle API, configurato nell'environment
   private apiUrl = environment.apiUrl;
+  
+  // Iniezione delle dipendenze 
   private http = inject(HttpClient);
   private router = inject(Router);
 
-  // Signals
+  // === SIGNALS PRIVATI (stato interno modificabile) ===
+  
+  // Dati dell'utente attualmente autenticato (null se non loggato)
   private currentUserSignal = signal<User | null>(null);
+  // Token JWT per l'autenticazione delle richieste API
   private tokenSignal = signal<string | null>(null);
 
-  // Public readonly signals
+  // === SIGNALS PUBBLICI IN SOLA LETTURA ===
+  // Esposti ai componenti per la sottoscrizione reattiva
+  
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly token = this.tokenSignal.asReadonly();
 
-  // Computed signals
+  // === COMPUTED SIGNALS ===
+  // Valori derivati che si aggiornano automaticamente
+  
+  // True se l'utente è autenticato (presenza del token)
   readonly isAuthenticated = computed(() => !!this.tokenSignal());
+  // Username dell'utente corrente, stringa vuota se non loggato
   readonly userName = computed(() => this.currentUserSignal()?.username ?? '');
+  // Oggetto tenant associato all'utente
   readonly userTenant = computed(() => this.currentUserSignal()?.tenant ?? null);
-  readonly tenantName = computed(() => this.currentUserSignal()?.tenant?.name ?? 'No Organization');
+  // Nome del tenant per visualizzazione in UI
+  readonly tenantName = computed(() => this.currentUserSignal()?.tenant?.name ?? 'Nessun Tenant');
 
   constructor() {
+    // All'avvio del servizio, tenta di ripristinare la sessione da localStorage
     this.loadFromStorage();
 
+    // Effect reattivo: sincronizza automaticamente lo stato con localStorage
     effect(() => {
       const token = this.tokenSignal();
       const user = this.currentUserSignal();
 
+      // Salva in localStorage solo se entrambi i valori sono presenti
       if (token && user) {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
@@ -44,6 +69,10 @@ export class AuthService {
     });
   }
 
+  /**
+   * Ripristina la sessione utente dal localStorage al caricamento dell'app.
+   * Verifica che il token non sia scaduto prima di ripristinare la sessione.
+   */
   private loadFromStorage(): void {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
@@ -52,33 +81,60 @@ export class AuthService {
       try {
         const user = JSON.parse(userStr) as User;
 
+        // Verifica la validità temporale del token JWT
         if (this.isTokenValid(token)) {
+          // Token valido: ripristina la sessione
           this.tokenSignal.set(token);
           this.currentUserSignal.set(user);
         } else {
+          // Token scaduto: pulisce i dati obsoleti
           this.clearStorage();
         }
       } catch {
+        // Errore nel parsing JSON: dati corrotti, pulizia necessaria
         this.clearStorage();
       }
     }
   }
 
+  /**
+   * Verifica se un token JWT è ancora valido controllando il campo 'exp' (expiration).
+   * Decodifica il payload del token (parte centrale in Base64) senza verificare la firma.
+   * 
+   * @param token - Token JWT da validare
+   * @returns true se il token non è scaduto, false altrimenti
+   */
   private isTokenValid(token: string): boolean {
     try {
+      // Il JWT è composto da 3 parti separate da '.': header.payload.signature
+      // Decodifica il payload da Base64
       const payload = JSON.parse(atob(token.split('.')[1]));
+      // Confronta la scadenza con il timestamp attuale
       const isValid = payload.exp > Math.floor(Date.now() / 1000);
       return isValid;
     } catch {
+      // Qualsiasi errore di parsing indica un token malformato
       return false;
     }
   }
 
+  /**
+   * Rimuove tutti i dati di autenticazione dal localStorage.
+   * Chiamato durante il logout o quando il token risulta invalido.
+   */
   private clearStorage(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
 
+  /**
+   * Effettua il login dell'utente con le credenziali fornite.
+   * In caso di successo, aggiorna automaticamente lo stato interno
+   * che a sua volta triggera l'effect per la persistenza in localStorage.
+   * 
+   * @param request - Oggetto contenente username/email e password
+   * @returns Observable con la risposta di autenticazione (token + dati utente)
+   */
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, request).pipe(
       tap((response) => {
@@ -88,6 +144,14 @@ export class AuthService {
     );
   }
 
+  /**
+   * Registra un nuovo utente nel sistema.
+   * Funziona come il login: in caso di successo l'utente viene
+   * automaticamente autenticato senza necessità di login separato.
+   * 
+   * @param request - Dati di registrazione (username, email, password, tenant, ecc.)
+   * @returns Observable con la risposta di autenticazione (token + dati utente)
+   */
   register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, request).pipe(
       tap((response) => {
@@ -97,6 +161,13 @@ export class AuthService {
     );
   }
 
+  /**
+   * Aggiorna i dati del profilo utente dal backend.
+   * Utile quando i dati potrebbero essere cambiati lato server
+   * (es. modifica profilo, cambio permessi, aggiornamento tenant).
+   * 
+   * @returns Observable con i dati aggiornati dell'utente
+   */
   refreshProfile(): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/user/profile`).pipe(
       tap((user) => {
@@ -106,6 +177,11 @@ export class AuthService {
     );
   }
 
+  /**
+   * Effettua il logout dell'utente.
+   * Resetta completamente lo stato di autenticazione e
+   * reindirizza alla pagina di login.
+   */
   logout(): void {
     this.tokenSignal.set(null);
     this.currentUserSignal.set(null);
@@ -113,6 +189,13 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  /**
+   * Getter per il token JWT corrente.
+   * Utilizzato principalmente dall'interceptor HTTP per
+   * aggiungere l'header Authorization alle richieste API.
+   * 
+   * @returns Token JWT o null se non autenticato
+   */
   getToken(): string | null {
     const token = this.tokenSignal();
     return token;
