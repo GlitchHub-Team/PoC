@@ -14,7 +14,7 @@
 /yarn.lock
 
 # Environment files
-/.env
+# /.env
 
 # Angular CLI and build artefacts
 /.angular-cli.json
@@ -54,7 +54,7 @@ go.work
 go.work.sum
 
 # env file
-.env
+# .env
 
 # Editor/IDE
 # .idea/
@@ -62,3 +62,6 @@ go.work.sum
 
 # TimescaleDB ####################################################################################
 /database/timescale-data/*
+
+# NATS JetStream ####################################################################################
+src/nats-jetstream/jetstream-data/jetstream/*

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,16 +18,58 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func InitSubscriber(natsURL string, consumerId string, wg *sync.WaitGroup) {
+func InitSubscriber(natsURL string, consumerId string, credsPath string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	nc, err := nats.Connect(natsURL)
+	nc, err := getNatsConnection(natsURL, "glitchhubteam.it", credsPath)
 	if err != nil {
 		panic(err)
 	}
 	defer nc.Close()
 
-	start(nc, consumerId)
+	js, err := configStream(nc)
+	if err != nil {
+		log.Fatalf("Errore creazione contesto JetStream: %v", err)
+	}
+
+	start(&js, consumerId)
+	nc.Drain()
+}
+
+func configStream(nc *nats.Conn) (nats.JetStreamContext, error) {
+	streamConfig := &nats.StreamConfig{
+		Name:     "CONSUMING_SENSORS",
+		Subjects: []string{"sensors.>"},
+		Sources: []*nats.StreamSource{
+			{
+				Name:          "ExportTenant1Data",
+				FilterSubject: "sensors.tenant_1.>",
+				External: &nats.ExternalStream{
+					APIPrefix: "tenant_1.$JS.API",
+				},
+			},
+			{
+				Name:          "ExportTenant2Data",
+				FilterSubject: "sensors.tenant_2.>",
+				External: &nats.ExternalStream{
+					APIPrefix: "tenant_2.$JS.API",
+				},
+			},
+		},
+		Retention: nats.WorkQueuePolicy,
+	}
+
+	js, err := nc.JetStream()
+	if err != nil {
+		return nil, fmt.Errorf("errore ottenimento JetStream: %v", err)
+	}
+
+	_, err = js.AddStream(streamConfig)
+	if err != nil {
+		return nil, fmt.Errorf("errore creazione stream: %v", err)
+	}
+
+	return js, nil
 }
 
 func unmurshallSpo2Data(data []byte) (sensor.PulseOxData, error) {
@@ -48,13 +92,46 @@ func unmurshallHeartRateData(data []byte) (sensor.HearthRateData, error) {
 	return hrData, nil
 }
 
-func start(nc *nats.Conn, consumerId string) {
+func getNatsConnection(natsURL string, servername string, credsPath string) (*nats.Conn, error) {
+	opts := nats.GetDefaultOptions()
+	opts.Url = natsURL
+
+	certPool := x509.NewCertPool()
+	caData, err := os.ReadFile("certs/ca.pem") //ca.pem da prendere da BITWARDEN
+	if err != nil {
+		log.Fatalf("Errore lettura file: %v", err)
+	}
+	if ok := certPool.AppendCertsFromPEM(caData); !ok {
+		log.Fatal("Impossibile aggiungere il certificato CA al pool: il formato potrebbe essere errato")
+	}
+
+	opts.TLSConfig = &tls.Config{
+		RootCAs:    certPool,
+		ServerName: servername,
+	}
+
+	err = nats.UserCredentials(credsPath)(&opts)
+	if err != nil {
+		return nil, err
+	}
+
+	nc, err := opts.Connect()
+	if err != nil {
+		return nil, err
+	}
+
+	return nc, nil
+}
+
+func start(js *nats.JetStreamContext, consumerId string) {
 	queueName := "sensor-subscribers"
 	subject := "sensors.>"
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
-	sub, err := nc.QueueSubscribe(subject, queueName, func(msg *nats.Msg) {
+	// Push consumer(attuale): i messaggi vengono spinti verso i subscriber indipendentemente dalla loro disponibilità, con il rischio di sovraccaricarli
+	// Pull consumer: i subscriber richiedono esplicitamente i messaggi al server, che li invia solo quando sono pronti a riceverli, evitando sovraccarichi
+	sub, err := (*js).QueueSubscribe(subject, queueName, func(msg *nats.Msg) {
 		subjectParts := strings.Split(msg.Subject, ".")
 		if len(subjectParts) < 4 {
 			fmt.Printf("Subject non valido: %s\n", msg.Subject)
@@ -70,6 +147,7 @@ func start(nc *nats.Conn, consumerId string) {
 			hrData, err := unmurshallHeartRateData(msg.Data)
 			if err != nil {
 				fmt.Printf("Errore nel parsing dei dati di Heart Rate: %v\n", err)
+				msg.Nak()
 				return
 			}
 			err = dbaccess.InsertHeartRateData(tenantId, tablename, gatewayId, hrData)
@@ -77,6 +155,7 @@ func start(nc *nats.Conn, consumerId string) {
 				fmt.Printf("Errore nell'inserimento dei dati di Heart Rate nel database: %v\n", err)
 				return
 			}
+			msg.Ack()
 		case "blood_oxygen":
 			spO2Data, err := unmurshallSpo2Data(msg.Data)
 			if err != nil {
@@ -86,15 +165,17 @@ func start(nc *nats.Conn, consumerId string) {
 			err = dbaccess.InsertSpO2Data(tenantId, tablename, gatewayId, spO2Data)
 			if err != nil {
 				fmt.Printf("Errore nell'inserimento dei dati di SpO2 nel database: %v\n", err)
+				msg.Nak()
 				return
 			}
+			msg.Ack()
 		default:
 			fmt.Printf("Tipo di dato non supportato: %s\n", tablename)
 			return
 		}
 
 		fmt.Printf("Ricevuto su [%s], consumer%s: %s\n", msg.Subject, consumerId, string(msg.Data))
-	})
+	}, nats.ManualAck())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,5 +186,4 @@ func start(nc *nats.Conn, consumerId string) {
 	<-sigCh
 
 	fmt.Println("\nChiusura in corso...")
-	nc.Drain()
 }
