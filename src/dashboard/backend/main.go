@@ -80,6 +80,9 @@ func main() {
 		public.POST("/tenant/create", controllers.TenantCreatePost)
 		public.GET("/tenant/list", controllers.TenantListController)
 		public.GET("/ws/sensors/:tenant", controllers.SensorStream) // <-- lo messo qui per testyate
+
+		// API endpoint for historical metrics (public for testing)
+		public.GET("/api/history", controllers.HistoryGet)
 	}
 
 	// Pagine accessibili a utenti autorizzati
