@@ -22,7 +22,12 @@ func Init(natsURL string, tenantID string, gatewayId string, wg *sync.WaitGroup)
 	}
 	defer nc.Close()
 
-	start(nc, tenantID, gatewayId)
+	js, err := configStreams(nc, tenantID)
+	if err != nil {
+		log.Fatalf("Errore configurazione stream: %v", err)
+	}
+
+	start(&js, tenantID, gatewayId)
 }
 
 func getNatsConnection(natsURL string, servername string, gatewayId string) (*nats.Conn, error) {
@@ -66,7 +71,36 @@ func getNatsConnection(natsURL string, servername string, gatewayId string) (*na
 	return nc, nil
 }
 
-func start(nc *nats.Conn, tenantID string, gatewayId string) {
+func configStreams(nc *nats.Conn, tenantId string) (nats.JetStreamContext, error) {
+	streamName := "sensors_" + tenantId
+
+	ONE_MONTH := 30 * 24 * time.Hour
+	ONE_MB := int32(1024 * 1024)
+
+	streamConfig := &nats.StreamConfig{
+		Name:       streamName,
+		Subjects:   []string{"sensors." + tenantId + ".>"},
+		Storage:    nats.FileStorage,
+		Replicas:   1, // Possibilità di scalare in futuro
+		Retention:  nats.LimitsPolicy,
+		MaxAge:     ONE_MONTH, // 30 giorni di conservazione dei messaggi
+		MaxMsgSize: ONE_MB,    // Limite di 1 MB per messaggio
+	}
+
+	js, err := nc.JetStream()
+	if err != nil {
+		return nil, fmt.Errorf("errore ottenimento JetStream: %v", err)
+	}
+
+	_, err = js.AddStream(streamConfig)
+	if err != nil {
+		return nil, fmt.Errorf("errore creazione stream: %v", err)
+	}
+
+	return js, nil
+}
+
+func start(js *nats.JetStreamContext, tenantId string, gatewayId string) {
 	for {
 		hrData := sensor.SimulateHeartRate()
 		spO2Data := sensor.SimulateSpO2()
@@ -81,11 +115,12 @@ func start(nc *nats.Conn, tenantID string, gatewayId string) {
 			panic(err)
 		}
 
-		err = nc.Publish("sensors."+tenantID+"."+gatewayId+".heart_rate", hrMsg)
+		_, err = (*js).Publish("sensors."+tenantId+"."+gatewayId+".heart_rate", hrMsg)
 		if err != nil {
 			log.Fatalf("Errore pubblicazione messaggio: %v", err)
 		}
-		err = nc.Publish("sensors."+tenantID+"."+gatewayId+".blood_oxygen", spO2Msg)
+
+		_, err = (*js).Publish("sensors."+tenantId+"."+gatewayId+".blood_oxygen", spO2Msg)
 		if err != nil {
 			log.Fatalf("Errore pubblicazione messaggio: %v", err)
 		}
