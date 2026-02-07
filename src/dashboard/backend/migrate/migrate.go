@@ -8,4 +8,7 @@ import (
 func Migrate() {
 	initializers.DB.AutoMigrate(&models.User{})
 	initializers.DB.AutoMigrate(&models.Tenant{})
+	initializers.DB.AutoMigrate(&models.Metric{})
+
+	initializers.DB.Exec("SELECT create_hypertable('metrics', 'timestamp', if_not_exists => TRUE);")
 }

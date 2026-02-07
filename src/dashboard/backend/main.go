@@ -43,6 +43,9 @@ func main() {
 		public.GET("/tenant/create", controllers.TenantCreateGet)
 		public.POST("/tenant/create", controllers.TenantCreatePost)
 		public.GET("/tenant/list", controllers.TenantListController)
+		
+		// API endpoint for historical metrics (public for testing)
+		public.GET("/api/history", controllers.HistoryGet)
 	}
 
     // Pagine accessibili a utenti autorizzati
