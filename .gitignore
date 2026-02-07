@@ -57,8 +57,9 @@ go.work.sum
 # .env
 
 # Editor/IDE
-# .idea/
+ .idea/
 # .vscode/
+.DS_Store
 
 # TimescaleDB ####################################################################################
 /database/timescale-data/*
