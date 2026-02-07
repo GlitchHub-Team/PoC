@@ -129,6 +129,8 @@ func start(js *nats.JetStreamContext, consumerId string) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
+	// Push consumer(attuale): i messaggi vengono spinti verso i subscriber indipendentemente dalla loro disponibilità, con il rischio di sovraccaricarli
+	// Pull consumer: i subscriber richiedono esplicitamente i messaggi al server, che li invia solo quando sono pronti a riceverli, evitando sovraccarichi
 	sub, err := (*js).QueueSubscribe(subject, queueName, func(msg *nats.Msg) {
 		subjectParts := strings.Split(msg.Subject, ".")
 		if len(subjectParts) < 4 {
@@ -145,6 +147,7 @@ func start(js *nats.JetStreamContext, consumerId string) {
 			hrData, err := unmurshallHeartRateData(msg.Data)
 			if err != nil {
 				fmt.Printf("Errore nel parsing dei dati di Heart Rate: %v\n", err)
+				msg.Nak()
 				return
 			}
 			err = dbaccess.InsertHeartRateData(tenantId, tablename, gatewayId, hrData)
@@ -152,6 +155,7 @@ func start(js *nats.JetStreamContext, consumerId string) {
 				fmt.Printf("Errore nell'inserimento dei dati di Heart Rate nel database: %v\n", err)
 				return
 			}
+			msg.Ack()
 		case "blood_oxygen":
 			spO2Data, err := unmurshallSpo2Data(msg.Data)
 			if err != nil {
@@ -161,15 +165,17 @@ func start(js *nats.JetStreamContext, consumerId string) {
 			err = dbaccess.InsertSpO2Data(tenantId, tablename, gatewayId, spO2Data)
 			if err != nil {
 				fmt.Printf("Errore nell'inserimento dei dati di SpO2 nel database: %v\n", err)
+				msg.Nak()
 				return
 			}
+			msg.Ack()
 		default:
 			fmt.Printf("Tipo di dato non supportato: %s\n", tablename)
 			return
 		}
 
 		fmt.Printf("Ricevuto su [%s], consumer%s: %s\n", msg.Subject, consumerId, string(msg.Data))
-	})
+	}, nats.ManualAck())
 	if err != nil {
 		log.Fatal(err)
 	}
