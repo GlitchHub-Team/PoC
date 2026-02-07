@@ -64,4 +64,4 @@ go.work.sum
 /database/timescale-data/*
 
 # NATS JetStream ####################################################################################
-/nats-jetstream/nats-data/*
+src/nats-jetstream/jetstream-data/jetstream/*
