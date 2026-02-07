@@ -17,7 +17,6 @@ func SignupControllerGet(c *gin.Context) {
 		"result": "",
 		"tenantList": tenants,
 	})
-	// c.JSON(200, gin.H{"ciao": "po"})
 }
 
 func signupControllerShowError(c *gin.Context, err error) {

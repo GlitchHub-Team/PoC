@@ -1,0 +1,30 @@
+services:
+  nats:
+    image: nats:latest
+    container_name: nats-server
+    command: ["-js", "-m", "8222", "-c", "/etc/nats/nats.conf"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - ./nats-jetstream/nats.conf:/etc/nats/nats.conf
+      - ./nats-jetstream/nats-data:/data
+    networks:
+      - nats-net
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=sensors_db
+    volumes:
+      - ./database/timescale-data:/var/lib/postgresql/data
+    networks:
+      - nats-net
+      
+networks:
+  nats-net:
+    driver: bridge

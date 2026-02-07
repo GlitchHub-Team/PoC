@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+/* Variabile globale usata per accesso al DB*/
 var DB *gorm.DB
 
 func ConnectDB() {

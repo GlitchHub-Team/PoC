@@ -15,12 +15,12 @@ type Tenant struct {
 
 type TenantAlreadyExists struct {}
 func (e *TenantAlreadyExists) Error() string {
-	return "username already exists"
+	return "Questo tenant esiste già"
 }
 
 func (tenant *Tenant) Create() (err error) {
 	var tenantFound Tenant
-	initializers.DB.Where("name = ?", tenant.Name).Find(&tenantFound)
+	initializers.DB.Where("name = ? and nats_id = ?", tenant.Name, tenant.NatsID).Find(&tenantFound)
 	
 	if tenantFound.ID != 0 {
 		err = &TenantAlreadyExists{}

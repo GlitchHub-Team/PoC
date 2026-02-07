@@ -28,7 +28,6 @@ func TenantIndexController(c *gin.Context) {
 		"tenant": user.Tenant,
 		"userList": users,
 	})
-
 }
 
 
@@ -39,7 +38,6 @@ func TenantListController(c *gin.Context) {
 	views.ShowView(c, gin.H{
 		"tenantList": tenants,
 	})
-	
 }
 
 
@@ -80,5 +78,4 @@ func TenantCreatePost(c *gin.Context) {
 	views.ShowView(c, gin.H{
 		"result": fmt.Sprintf("Creato tenant %v (ID %v) con successo", tenant.Name, tenant.NatsID),
 	})
-
 }
