@@ -17,7 +17,7 @@ Per avviare NATS e TimeScaleDB utilizzare il file `docker-compose.yml` presente 
 ```
 sudo docker compose up -d
 ```
-
+Ricordarsi di eseguire il file di dump situato in `src/database/tables.sql` nel pannello `Adminer` una volta che si avvia il container docker.
 ## Avvio Publisher e Subscriber
 Per avviare il publisher(gateway simulato) e il subscriber (servizio di persistenza dati) utilizzare i comandi(dalla root del progetto):
 ```
