@@ -1,24 +1,18 @@
 # PoC
 Repository principale del Proof of Concept di GlitchHub Team
 
-## Avvio dashboard
-Per avviare la dashboard, vedere le istruzioni in `dashboard/README.md`
+# NSC(opzionale)
+Strumento CLI per la gestione di utenti, permessi e configurazione di NATS. Per installarlo, seguire le istruzioni ufficiali: [https://docs.nats.io/nats-tools/nsc/installation](https://github.com/nats-io/nsc#install)
 
-<<<<<<< Updated upstream
-## Avvio NATS e database TimeScaleDB
-=======
 ## Configurazione NSC(opzionale)
 - Eseguire comando `nsc init`
 - Eseguire comando `nsc import operator --jwt ./nats-jetstream/jwt-accounts/operator/operator.jwt`
 - Eseguire comando `nsc pull -A --ca-cert nats-jetstream/certs/ca.pem` per scaricare account
 - Controlla che l'operator sia stato configurato con `nsc describe operator`
 
-## Configurazione Database TimescaleDB
-Ricordarsi di andare su src/database e far eseguire il dump su `Adminer`.
 
 # Avvio
 ## Avvio NATS, database TimeScaleDB e backend Gin
->>>>>>> Stashed changes
 Per avviare NATS e TimeScaleDB utilizzare il file `docker-compose.yml` presente nella cartella principale del progetto. Eseguire il comando:
 ```
 sudo docker compose up -d
