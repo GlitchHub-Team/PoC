@@ -9,7 +9,7 @@ import { RegisterRequest } from '../models/register-request.model';
 import { AuthResponse } from '../models/auth-response.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private apiUrl = environment.apiUrl;
@@ -81,29 +81,29 @@ export class AuthService {
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, request).pipe(
-      tap(response => {
+      tap((response) => {
         this.tokenSignal.set(response.token);
         this.currentUserSignal.set(response.user);
-      })
+      }),
     );
   }
 
   register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, request).pipe(
-      tap(response => {
+      tap((response) => {
         this.tokenSignal.set(response.token);
         this.currentUserSignal.set(response.user);
-      })
+      }),
     );
   }
 
   refreshProfile(): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/user/profile`).pipe(
-      tap(user => {
+      tap((user) => {
         this.currentUserSignal.set(user);
         localStorage.setItem('user', JSON.stringify(user));
-      })
-    )
+      }),
+    );
   }
 
   logout(): void {

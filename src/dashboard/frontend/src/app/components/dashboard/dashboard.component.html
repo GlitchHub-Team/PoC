@@ -34,7 +34,7 @@
           </div>
           <div class="info-row">
             <span class="info-label">Member Since</span>
-            <span class="info-value">{{ user.createdAt | date:'mediumDate' }}</span>
+            <span class="info-value">{{ user.createdAt | date: 'mediumDate' }}</span>
           </div>
         </div>
       </section>
@@ -88,7 +88,6 @@
           </div>
         }
       </section>
-
     } @else {
       <div class="loading-container full-page">
         <span class="spinner-large"></span>

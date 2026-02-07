@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { Tenant } from '../models/tenant.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TenantService {
   private apiUrl = environment.apiUrl;
@@ -26,7 +26,7 @@ export class TenantService {
   loadTenants(): Observable<Tenant[]> {
     // Se già caricati, ritorna i dati esistenti
     if (this.hasTenants()) {
-      return new Observable(subscriber => {
+      return new Observable((subscriber) => {
         subscriber.next(this.tenantsSignal());
         subscriber.complete();
       });
@@ -35,7 +35,7 @@ export class TenantService {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
-    // Recupera i dati con una call GET 
+    // Recupera i dati con una call GET
     return this.http.get<Tenant[]>(`${this.apiUrl}/tenants`).pipe(
       tap({
         next: (tenants) => {
@@ -45,8 +45,8 @@ export class TenantService {
         error: (err) => {
           this.errorSignal.set('Failed to load tenants');
           this.loadingSignal.set(false);
-        }
-      })
+        },
+      }),
     );
   }
 

@@ -26,32 +26,31 @@ interface TokenPayload {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class InMemoryDataService implements InMemoryDbService {
-
   private tenants = [
     {
       id: 1,
       natsId: 'nats-hospital-001',
       name: 'City General Hospital',
       createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
+      updatedAt: '2024-01-01T00:00:00Z',
     },
     {
       id: 2,
       natsId: 'nats-clinic-002',
       name: 'HealthFirst Clinic',
       createdAt: '2024-01-05T10:30:00Z',
-      updatedAt: '2024-01-05T10:30:00Z'
+      updatedAt: '2024-01-05T10:30:00Z',
     },
     {
       id: 3,
       natsId: 'nats-research-003',
       name: 'BioMed Research Lab',
       createdAt: '2024-01-10T14:45:00Z',
-      updatedAt: '2024-01-10T14:45:00Z'
-    }
+      updatedAt: '2024-01-10T14:45:00Z',
+    },
   ];
 
   private users: Array<User & { password: string }> = [];
@@ -69,7 +68,7 @@ export class InMemoryDataService implements InMemoryDbService {
         username: 'dr.smith',
         password: 'password123',
         createdAt: '2024-01-15T10:30:00Z',
-        updatedAt: '2024-01-15T10:30:00Z'
+        updatedAt: '2024-01-15T10:30:00Z',
       },
       {
         id: 2,
@@ -78,7 +77,7 @@ export class InMemoryDataService implements InMemoryDbService {
         username: 'nurse.jones',
         password: 'password123',
         createdAt: '2024-01-16T08:00:00Z',
-        updatedAt: '2024-01-16T08:00:00Z'
+        updatedAt: '2024-01-16T08:00:00Z',
       },
       {
         id: 3,
@@ -87,7 +86,7 @@ export class InMemoryDataService implements InMemoryDbService {
         username: 'admin',
         password: 'admin123',
         createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
+        updatedAt: '2024-01-01T00:00:00Z',
       },
       {
         id: 4,
@@ -96,7 +95,7 @@ export class InMemoryDataService implements InMemoryDbService {
         username: 'dr.wilson',
         password: 'password123',
         createdAt: '2024-02-20T14:45:00Z',
-        updatedAt: '2024-02-20T14:45:00Z'
+        updatedAt: '2024-02-20T14:45:00Z',
       },
       {
         id: 5,
@@ -105,7 +104,7 @@ export class InMemoryDataService implements InMemoryDbService {
         username: 'admin',
         password: 'admin123',
         createdAt: '2024-02-01T00:00:00Z',
-        updatedAt: '2024-02-01T00:00:00Z'
+        updatedAt: '2024-02-01T00:00:00Z',
       },
       {
         id: 6,
@@ -114,7 +113,7 @@ export class InMemoryDataService implements InMemoryDbService {
         username: 'researcher.lee',
         password: 'password123',
         createdAt: '2024-03-01T08:00:00Z',
-        updatedAt: '2024-03-01T08:00:00Z'
+        updatedAt: '2024-03-01T08:00:00Z',
       },
       {
         id: 7,
@@ -123,13 +122,13 @@ export class InMemoryDataService implements InMemoryDbService {
         username: 'admin',
         password: 'admin123',
         createdAt: '2024-02-10T00:00:00Z',
-        updatedAt: '2024-02-10T00:00:00Z'
-      }
+        updatedAt: '2024-02-10T00:00:00Z',
+      },
     ];
   }
 
   private findTenant(id: number): Tenant {
-    const tenant = this.tenants.find(t => t.id === id);
+    const tenant = this.tenants.find((t) => t.id === id);
     if (!tenant) {
       throw new Error(`Tenant with ID ${id} not found`);
     }
@@ -186,14 +185,12 @@ export class InMemoryDataService implements InMemoryDbService {
   private handleLogin(body: LoginRequest): ResponseOptions {
     const { Username, Password, TenantID } = body;
 
-    const tenant = this.tenants.find(t => t.id === TenantID);
+    const tenant = this.tenants.find((t) => t.id === TenantID);
     if (!tenant) {
       return this.createErrorResponse(STATUS.BAD_REQUEST, 'Invalid tenant');
     }
 
-    const user = this.users.find(
-      u => u.username === Username && u.tenantId === TenantID
-    );
+    const user = this.users.find((u) => u.username === Username && u.tenantId === TenantID);
 
     if (!user || user.password !== Password) {
       return this.createErrorResponse(STATUS.UNAUTHORIZED, 'Invalid credentials');
@@ -204,21 +201,19 @@ export class InMemoryDataService implements InMemoryDbService {
 
     return {
       status: STATUS.OK,
-      body: { token, user: userResponse }
+      body: { token, user: userResponse },
     };
   }
 
   private handleRegister(body: RegisterRequest): ResponseOptions {
     const { Username, Password, TenantID } = body;
 
-    const tenant = this.tenants.find(t => t.id === TenantID);
+    const tenant = this.tenants.find((t) => t.id === TenantID);
     if (!tenant) {
       return this.createErrorResponse(STATUS.BAD_REQUEST, 'Invalid tenant');
     }
 
-    const existingUser = this.users.find(
-      u => u.username === Username && u.tenantId === TenantID
-    );
+    const existingUser = this.users.find((u) => u.username === Username && u.tenantId === TenantID);
 
     if (existingUser) {
       return this.createErrorResponse(STATUS.CONFLICT, 'Username already exists in this tenant');
@@ -232,7 +227,7 @@ export class InMemoryDataService implements InMemoryDbService {
       username: Username,
       password: Password,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
     this.users.push(newUser);
@@ -242,7 +237,7 @@ export class InMemoryDataService implements InMemoryDbService {
 
     return {
       status: STATUS.CREATED,
-      body: { token, user: userResponse }
+      body: { token, user: userResponse },
     };
   }
 
@@ -255,7 +250,7 @@ export class InMemoryDataService implements InMemoryDbService {
       const id = reqInfo.id;
 
       if (id) {
-        const tenant = this.tenants.find(t => t.id === Number(id));
+        const tenant = this.tenants.find((t) => t.id === Number(id));
         if (!tenant) {
           return this.createErrorResponse(STATUS.NOT_FOUND, 'Tenant not found');
         }
@@ -278,7 +273,7 @@ export class InMemoryDataService implements InMemoryDbService {
         return this.createErrorResponse(STATUS.UNAUTHORIZED, 'Invalid token');
       }
 
-      const user = this.users.find(u => u.id === payload.UserID);
+      const user = this.users.find((u) => u.id === payload.UserID);
 
       if (!user) {
         return this.createErrorResponse(STATUS.NOT_FOUND, 'User not found');
@@ -298,12 +293,12 @@ export class InMemoryDataService implements InMemoryDbService {
     // L'header è nel req object
     try {
       const req = reqInfo.req as any;
-      
+
       // Metodo 1: headers come HttpHeaders
       if (req && req.headers && typeof req.headers.get === 'function') {
         authHeader = req.headers.get('Authorization');
       }
-      
+
       // Metodo 2: headers come oggetto semplice
       if (!authHeader && req && req.headers && req.headers.Authorization) {
         authHeader = req.headers.Authorization;
@@ -321,7 +316,6 @@ export class InMemoryDataService implements InMemoryDbService {
           authHeader = headers.get ? headers.get('Authorization') : headers['Authorization'];
         }
       }
-
     } catch (e) {
       console.error('Error extracting auth header:', e);
     }
@@ -339,7 +333,7 @@ export class InMemoryDataService implements InMemoryDbService {
   // ============================================
 
   private generateNextUserId(): number {
-    return Math.max(...this.users.map(u => u.id), 0) + 1;
+    return Math.max(...this.users.map((u) => u.id), 0) + 1;
   }
 
   private generateMockToken(user: User): string {
@@ -349,7 +343,7 @@ export class InMemoryDataService implements InMemoryDbService {
       Username: user.username,
       TenantID: user.tenantId,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     };
 
     const headerBase64 = btoa(JSON.stringify(header));

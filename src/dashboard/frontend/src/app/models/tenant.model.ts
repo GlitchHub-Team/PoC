@@ -1,7 +1,7 @@
 export interface Tenant {
-    id: number;
-    natsId: string;
-    name: string 
-	createdAt?: string;
-	updatedAt?: string;
+  id: number;
+  natsId: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

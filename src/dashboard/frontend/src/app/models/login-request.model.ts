@@ -1,5 +1,5 @@
 export interface LoginRequest {
-    tenantId: string;
-    username: string;
-    password: string;
+  tenantId: string;
+  username: string;
+  password: string;
 }

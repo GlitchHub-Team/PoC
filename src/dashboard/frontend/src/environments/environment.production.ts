@@ -2,7 +2,7 @@
 
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8080/api',
-  wsUrl: 'ws://localhost:8080/api',
+  apiUrl: 'http://localhost:3000/api',
+  wsUrl: 'ws://localhost:3000/api',
   useMock: false,
 };

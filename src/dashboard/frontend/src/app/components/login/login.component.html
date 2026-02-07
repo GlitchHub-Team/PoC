@@ -5,7 +5,7 @@
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <!-- Tenant Dropdown con Signals -->
       <div class="form-group">
-        <label for="TenantID">Organization</label>
+        <label for="TenantID">Tenant</label>
         <select
           id="TenantID"
           formControlName="TenantID"
@@ -13,28 +13,26 @@
           [disabled]="isLoadingTenants()"
         >
           @if (isLoadingTenants()) {
-            <option value="">Loading organizations...</option>
+            <option value="">Loading tenants...</option>
           } @else if (tenantError()) {
-            <option value="">Error loading organizations</option>
+            <option value="">Error loading tenants</option>
           } @else {
-            <option value="">Select your organization</option>
+            <option value="">Select your tenant</option>
             @for (tenant of tenants(); track tenant.id) {
               <option [value]="tenant.id">
-                {{ tenant.name }} ({{ tenant.natsId }})
+                {{ tenant.name }}
               </option>
             }
           }
         </select>
 
         @if (loginForm.get('TenantID')?.invalid && loginForm.get('TenantID')?.touched) {
-          <span class="error-message">Please select an organization</span>
+          <span class="error-message">Please select an tenant</span>
         }
-        
+
         @if (tenantError()) {
           <span class="error-message">{{ tenantError() }}</span>
-          <button type="button" class="retry-btn" (click)="retryLoadTenants()">
-            Retry
-          </button>
+          <button type="button" class="retry-btn" (click)="retryLoadTenants()">Retry</button>
         }
       </div>
 
@@ -87,10 +85,7 @@
       }
 
       <!-- Submit Button -->
-      <button 
-        type="submit" 
-        [disabled]="loginForm.invalid || isSubmitting() || isLoadingTenants()"
-      >
+      <button type="submit" [disabled]="loginForm.invalid || isSubmitting() || isLoadingTenants()">
         @if (isSubmitting()) {
           <span class="spinner"></span>
           Logging in...
@@ -100,8 +95,6 @@
       </button>
     </form>
 
-    <p class="auth-link">
-      Don't have an account? <a routerLink="/register">Register</a>
-    </p>
+    <p class="auth-link">Don't have an account? <a routerLink="/register">Register</a></p>
   </div>
 </div>

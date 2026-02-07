@@ -10,7 +10,7 @@ import { TenantService } from '../../services/tenant.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+  styleUrls: ['./login.component.css'],
 })
 export class LoginComponent implements OnInit {
   // Services (private)
@@ -33,7 +33,7 @@ export class LoginComponent implements OnInit {
   loginForm: FormGroup = this.fb.group({
     TenantID: ['', [Validators.required]],
     Username: ['', [Validators.required]],
-    Password: ['', [Validators.required]]
+    Password: ['', [Validators.required]],
   });
 
   ngOnInit(): void {
@@ -54,7 +54,7 @@ export class LoginComponent implements OnInit {
 
     const loginData = {
       ...this.loginForm.value,
-      TenantID: Number(this.loginForm.value.TenantID)
+      TenantID: Number(this.loginForm.value.TenantID),
     };
 
     // Ok -> dashboard / Error -> mostra msg di errore
@@ -66,7 +66,7 @@ export class LoginComponent implements OnInit {
       error: (error) => {
         this.isSubmitting.set(false);
         this.submitError.set(error.error?.error || 'Login failed. Please try again.');
-      }
+      },
     });
   }
 
@@ -75,7 +75,7 @@ export class LoginComponent implements OnInit {
   }
 
   private markFormAsTouched(): void {
-    Object.values(this.loginForm.controls).forEach(control => {
+    Object.values(this.loginForm.controls).forEach((control) => {
       control.markAsTouched();
     });
   }

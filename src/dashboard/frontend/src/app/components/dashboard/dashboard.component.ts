@@ -10,10 +10,9 @@ import { SensorDataService } from '../../services/sensor-data.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css']
+  styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements OnInit {
-
   // ============ SERVICES ============
   private authService = inject(AuthService);
   protected sensorService = inject(SensorDataService);

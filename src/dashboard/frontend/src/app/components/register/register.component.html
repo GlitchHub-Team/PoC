@@ -5,7 +5,7 @@
     <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
       <!-- Tenant Dropdown -->
       <div class="form-group">
-        <label for="TenantID">Organization</label>
+        <label for="TenantID">Tenant</label>
         <select
           id="TenantID"
           formControlName="TenantID"
@@ -13,21 +13,21 @@
           [disabled]="isLoadingTenants()"
         >
           @if (isLoadingTenants()) {
-            <option value="">Loading organizations...</option>
+            <option value="">Loading tenants...</option>
           } @else if (tenantError()) {
-            <option value="">Error loading organizations</option>
+            <option value="">Error loading tenants</option>
           } @else {
-            <option value="">Select your organization</option>
+            <option value="">Select your tenant</option>
             @for (tenant of tenants(); track tenant.id) {
               <option [value]="tenant.id">
-                {{ tenant.name }} ({{ tenant.natsId }})
+                {{ tenant.name }}
               </option>
             }
           }
         </select>
 
         @if (registerForm.get('TenantID')?.invalid && registerForm.get('TenantID')?.touched) {
-          <span class="error-message">Please select an organization</span>
+          <span class="error-message">Please select an tenant</span>
         }
 
         @if (tenantError()) {

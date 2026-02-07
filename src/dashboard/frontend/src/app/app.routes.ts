@@ -8,29 +8,31 @@ export const routes: Routes = [
   {
     path: '',
     redirectTo: '/login',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'login',
-    loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent),
-    canActivate: [guestGuard]
+    loadComponent: () => import('./components/login/login.component').then((m) => m.LoginComponent),
+    canActivate: [guestGuard],
   },
   {
     path: 'register',
-    loadComponent: () => import('./components/register/register.component').then(m => m.RegisterComponent),
-    canActivate: [guestGuard]
+    loadComponent: () =>
+      import('./components/register/register.component').then((m) => m.RegisterComponent),
+    canActivate: [guestGuard],
   },
   {
     path: 'dashboard',
-    loadComponent: () => import('./components/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard]
+    loadComponent: () =>
+      import('./components/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    canActivate: [authGuard],
   },
   {
-    path: 'sensor/:sensorId',
-    loadComponent: () => import('./components/sensor-widget/sensor-widget.component').then(m => m.SensorWidgetComponent),
+    //path: 'sensor/:sensorId',
+    //loadComponent: () => import('./components/sensor-widget/sensor-widget.component').then(m => m.SensorWidgetComponent),
   },
   {
     path: '**',
-    redirectTo: '/login'
-  }
+    redirectTo: '/login',
+  },
 ];

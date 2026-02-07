@@ -3,7 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 // Se auth verificata, lascia proseguire in app.router, altrimenti
-// append all'Url e reindirizza lì 
+// append all'Url e reindirizza lì
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);

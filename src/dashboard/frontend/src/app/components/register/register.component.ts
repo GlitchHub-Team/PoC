@@ -1,6 +1,12 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+  AbstractControl,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TenantService } from '../../services/tenant.service';
@@ -10,7 +16,7 @@ import { TenantService } from '../../services/tenant.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css']
+  styleUrls: ['./register.component.css'],
 })
 export class RegisterComponent implements OnInit {
   // Services (private)
@@ -30,12 +36,15 @@ export class RegisterComponent implements OnInit {
   protected submitError = signal<string | null>(null);
 
   // Form
-  registerForm: FormGroup = this.fb.group({
-    TenantID: ['', [Validators.required]],
-    Username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
-    Password: ['', [Validators.required, Validators.minLength(6)]],
-    ConfirmPassword: ['', [Validators.required]]
-  }, { validators: this.passwordMatchValidator });
+  registerForm: FormGroup = this.fb.group(
+    {
+      TenantID: ['', [Validators.required]],
+      Username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
+      Password: ['', [Validators.required, Validators.minLength(6)]],
+      ConfirmPassword: ['', [Validators.required]],
+    },
+    { validators: this.passwordMatchValidator },
+  );
 
   ngOnInit(): void {
     // Carica tenant se non già caricati
@@ -77,7 +86,7 @@ export class RegisterComponent implements OnInit {
       error: (error) => {
         this.isSubmitting.set(false);
         this.submitError.set(error.error?.error || 'Registration failed. Please try again.');
-      }
+      },
     });
   }
 
@@ -86,7 +95,7 @@ export class RegisterComponent implements OnInit {
   }
 
   private markFormAsTouched(): void {
-    Object.values(this.registerForm.controls).forEach(control => {
+    Object.values(this.registerForm.controls).forEach((control) => {
       control.markAsTouched();
     });
   }

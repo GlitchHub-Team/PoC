@@ -4,7 +4,7 @@ import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@a
 import { HttpClientInMemoryWebApiModule } from 'angular-in-memory-web-api';
 
 import { routes } from './app.routes';
-import { AuthInterceptor } from './interceptors/auth.interceptor'
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { InMemoryDataService } from './mock/in-memory-data.service';
 import { environment } from '../environments/environment';
 
@@ -15,17 +15,19 @@ export const appConfig: ApplicationConfig = {
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
-      multi: true
+      multi: true,
     },
     // Mock backend - only in development
-    ...(environment.useMock ? [
-      importProvidersFrom(
-        HttpClientInMemoryWebApiModule.forRoot(InMemoryDataService, {
-          apiBase: 'api/',
-          delay: 500,
-          passThruUnknownUrl: true
-        })
-      )
-    ] : [])
-  ]
+    ...(environment.useMock
+      ? [
+          importProvidersFrom(
+            HttpClientInMemoryWebApiModule.forRoot(InMemoryDataService, {
+              apiBase: 'api/',
+              delay: 500,
+              passThruUnknownUrl: true,
+            }),
+          ),
+        ]
+      : []),
+  ],
 };
