@@ -43,7 +43,7 @@ services:
       context: src/dashboard/backend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       - timescaledb
     networks:
@@ -75,7 +75,56 @@ services:
       - timescaledb
     networks:
       - poc-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    depends_on:
+      - nats
+      - nats-exporter
+    networks:
+      - poc-net
+
+  nats-exporter:
+    image: natsio/prometheus-nats-exporter:latest
+    container_name: nats-exporter
+    ports:
+      - "7777:7777"
+    command:
+      - "-varz"
+      - "http://nats-server:8222"
+    depends_on:
+      - nats
+    networks:
+      - poc-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - poc-net
       
 networks:
   poc-net:
     driver: bridge
+
+volumes:
+  grafana-data:
