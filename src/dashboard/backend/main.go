@@ -55,9 +55,6 @@ func main() {
         private.GET("/user/profile", controllers.GetUserProfile)
 		
 		private.GET("/tenant", controllers.TenantIndexController)
-		
-		
-		
 	}
 
 	router.Run()

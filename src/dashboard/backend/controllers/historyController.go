@@ -1,8 +1,10 @@
 package controllers
 
 import (
+    "fmt"
+    "regexp"
+
     "gin-test/initializers"
-    "gin-test/models"
     "github.com/gin-gonic/gin"
     "net/http"
     "strconv"
@@ -13,15 +15,20 @@ func HistoryGet(c *gin.Context) {
     metric := c.Query("metric")
     limitQ := c.DefaultQuery("limit", "1000")
 
-    // Validate required params
     if tenantQ == "" || metric == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id and metric are required"})
         return
     }
 
-    tenantID, err := strconv.ParseUint(tenantQ, 10, 32)
-    if err != nil {
+    tenantID, err := strconv.Atoi(tenantQ)
+    if err != nil || tenantID <= 0 {
         c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant_id"})
+        return
+    }
+
+    validIdent := regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+    if !validIdent.MatchString(metric) {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid metric name"})
         return
     }
 
@@ -30,16 +37,47 @@ func HistoryGet(c *gin.Context) {
         limit = 1000
     }
     if limit > 10000 {
-        limit = 10000 // cap max
+        limit = 10000
     }
 
-    var points []models.Metric
-    initializers.DB.
-        Where("tenant_id = ?", tenantID).
-        Where("metric = ?", metric).
-        Order("timestamp asc").
-        Limit(limit).
-        Find(&points)
+    
+    schema := fmt.Sprintf("tenant_%d", tenantID)
+    table := metric
 
-    c.JSON(http.StatusOK, points)
+    query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY time ASC LIMIT %d", schema, table, limit)
+
+    rows, err := initializers.DB.Raw(query).Rows()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("query failed: %v", err)})
+        return
+    }
+    defer rows.Close()
+
+    cols, err := rows.Columns()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get columns"})
+        return
+    }
+
+    // Build result as slice of maps (flexible for dynamic columns)
+    var points []map[string]interface{}
+    for rows.Next() {
+        vals := make([]interface{}, len(cols))
+        valPtrs := make([]interface{}, len(cols))
+        for i := range cols {
+            valPtrs[i] = &vals[i]
+        }
+        if err := rows.Scan(valPtrs...); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("scan failed: %v", err)})
+            return
+        }
+
+        entry := make(map[string]interface{})
+        for i, col := range cols {
+            entry[col] = vals[i]
+        }
+        points = append(points, entry)
+    }
+
+    c.JSON(http.StatusOK, gin.H{"data": points, "count": len(points)})
 }
