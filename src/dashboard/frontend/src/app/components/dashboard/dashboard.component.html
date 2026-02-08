@@ -1,6 +1,4 @@
-<!-- components/dashboard/dashboard.component.html -->
 <div class="dashboard-container">
-  <!-- Header -->
   <header>
     <div class="header-left">
       <h1>Dashboard</h1>
@@ -16,7 +14,6 @@
 
   <main>
     @if (currentUser(); as user) {
-      <!-- Account Info Section -->
       <section class="section">
         <h2>Informazioni account</h2>
         <div class="info-card">
@@ -39,7 +36,6 @@
         </div>
       </section>
 
-      <!-- Chart Panel -->
       @if (selectedSensor(); as sensor) {
         <section class="section">
           <div class="section-header">
@@ -72,9 +68,7 @@
               }
             </div>
 
-            <!-- Chart Content -->
             <div class="panel-content">
-              <!-- Live Mode -->
               @if (isLiveMode()) {
                 @if (wsError()) {
                   <div class="panel-error">{{ wsError() }}</div>
@@ -95,7 +89,6 @@
                 }
               }
 
-              <!-- History Mode -->
               @if (!isLiveMode()) {
                 @if (historicLoading()) {
                   <div class="panel-waiting">
@@ -125,7 +118,6 @@
         </section>
       }
 
-      <!-- Sensors Section -->
       <section class="section">
         <h2>Sensori</h2>
         <div class="table-container">

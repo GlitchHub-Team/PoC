@@ -3,7 +3,6 @@
     <h2>Login</h2>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <!-- Tenant Dropdown con Signals -->
       <div class="form-group">
         <label for="TenantID">Tenant</label>
         <select
@@ -36,7 +35,6 @@
         }
       </div>
 
-      <!-- Username -->
       <div class="form-group">
         <label for="Username">Username</label>
         <input
@@ -56,7 +54,6 @@
         }
       </div>
 
-      <!-- Password -->
       <div class="form-group">
         <label for="Password">Password</label>
         <input
@@ -77,14 +74,12 @@
         -->
       </div>
 
-      <!-- Server Error -->
       @if (submitError()) {
         <div class="error-message server-error">
           {{ submitError() }}
         </div>
       }
 
-      <!-- Submit Button -->
       <button type="submit" [disabled]="loginForm.invalid || isSubmitting() || isLoadingTenants()">
         @if (isSubmitting()) {
           <span class="spinner"></span>

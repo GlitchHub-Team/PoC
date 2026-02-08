@@ -2,24 +2,6 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.0.
 
-## Prerequisiti
-
-- `node.js`
-- `angular CLI`
-- installare le dependencies con `npm install` dentro la cartella `/frontend`
-
-## Eseguire il server
-
-Si può testare il fronted senza far partire il backend grazie a `angular-in-memory-web-api`.
-Questo pacchetto intercetta le richieste `HTTPClient` e le gestisce in un file in memory.
-Il server può essere lanciato assieme al parametro `--configuration`:
-- `ng serve --configuration development`: usa i dati mock selezionando come environment `environment.ts`
-- `ng serve --configuration production`: fa richieste al vero backend selezionando come environment `environment.production.ts`
-Ovviamente se si sceglie la configuration production il backend deve essere attivo, si può far partire tramite il docker compose in `src/dashboard`.
-
-### Nota
-Per il momento il collegamento API al backend è molto artigianale, permette di effettuare il login e la registrazione di nuovi utenti ma non di registrare tenant.
-
 ## Struttura del fronted:
 Questo frontend bare-bones segue i buoni principi dello sviluppo di Angular:
 - nella cartella `components` troviamo i componenti, ossia delle classi Typescript a cui associamo un template in HTML e un foglio di stile CSS

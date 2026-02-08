@@ -92,14 +92,14 @@ export class SensorDataService implements OnDestroy {
   readonly historicError = this.historicErrorSignal.asReadonly();
 
   /**
-   * Parse the subject string to extract tenant, gateway, and sensor type
-   * Format: sensors.{tenant_id}.{gateway}.{sensor_type}
+   * Effettua il parsing della stringa subject per estrarre tenant, gateway e tipo sensore.
+   * Formato atteso: sensors.{tenant_id}.{gateway}.{sensor_type}
    */
   private parseSubject(subject: string): { tenant: string; gateway: string; sensorType: string } | null {
     const parts = subject.split('.');
     
     if (parts.length !== 4 || parts[0] !== 'sensors') {
-      console.warn('Invalid subject format:', subject);
+      console.warn('Formato subject non valido:', subject);
       return null;
     }
 
@@ -111,7 +111,8 @@ export class SensorDataService implements OnDestroy {
   }
 
   /**
-   * Extract numeric value based on sensor type
+   * Estrae il valore numerico in base al tipo di sensore.
+   * Ogni tipo di sensore ha campi specifici (es: bpm per heart_rate, spO2 per blood_oxygen).
    */
   private extractValue(data: any, sensorType: string): number {
     switch (sensorType) {
@@ -120,14 +121,15 @@ export class SensorDataService implements OnDestroy {
       case 'blood_oxygen':
         return data.spO2 ?? 0;
       default:
-        // Try to find any numeric value
+        // Tenta di trovare qualsiasi valore numerico
         const numericValue = Object.values(data).find(v => typeof v === 'number');
         return (numericValue as number) ?? 0;
     }
   }
 
   /**
-   * Parse the raw WebSocket message into a structured reading
+   * Effettua il parsing del messaggio WebSocket grezzo in una lettura strutturata.
+   * Converte il JSON ricevuto nel formato interno SensorReading.
    */
   private parseMessage(raw: RawSensorReading): SensorReading | null {
     const subjectInfo = this.parseSubject(raw.subject);
@@ -146,13 +148,14 @@ export class SensorDataService implements OnDestroy {
         timestamp: new Date(raw.timestamp)
       };
     } catch (e) {
-      console.error('Failed to parse message data:', e);
+      console.error('Errore nel parsing dei dati del messaggio:', e);
       return null;
     }
   }
 
   /**
-   * Check if a reading matches the selected sensor type
+   * Verifica se una lettura corrisponde al tipo di sensore selezionato.
+   * Utilizzato per filtrare i messaggi WebSocket.
    */
   private matchesSelectedSensor(reading: SensorReading): boolean {
     const selected = this.selectedSensorSignal();
@@ -162,7 +165,8 @@ export class SensorDataService implements OnDestroy {
   }
 
   /**
-   * Build sensor-specific data object from metric
+   * Costruisce l'oggetto dati specifico per ogni tipo di sensore a partire dalla metrica.
+   * Necessario per uniformare il formato tra dati storici e dati live.
    */
   private buildSensorData(metric: HistoricDataResponse): any {
     switch (metric.metric) {
@@ -176,16 +180,16 @@ export class SensorDataService implements OnDestroy {
   }
 
   /**
-   * Transform backend HistoricMetric[] to ParsedSensorReading[]
-   * This ensures consistency between live and historic data formats
+   * Trasforma l'array HistoricMetric[] del backend in ParsedSensorReading[].
+   * Garantisce consistenza tra il formato dei dati live e storici.
    */
   private transformHistoricData(
     metrics: HistoricDataResponse[], 
     sensor: Sensor
   ): SensorReading[] {
     return metrics.map(metric => ({
-      tenant: `tenant_${metric.tenantId}`,  // Reconstruct natsId format
-      gateway: 'unknown',                      // Not available in historic data
+      tenant: `tenant_${metric.tenantId}`,  // Ricostruisce il formato natsId
+      gateway: 'unknown',                    // Non disponibile nei dati storici
       sensorType: metric.metric,
       data: this.buildSensorData(metric),
       value: metric.value,
@@ -194,12 +198,12 @@ export class SensorDataService implements OnDestroy {
   }
 
   /**
-   * Recupera dati storici dall'API
+   * Recupera dati storici dall'API.
    * 
    * @param sensor - Sensore di cui vogliamo lo storico
    * @param minutes - Range temporale di interesse (default 60 minuti)
    * 
-   * Calcolo numero letture: 1 lettura every 5 secondi = 12 letture al minuto
+   * Calcolo numero letture: 1 lettura ogni 5 secondi = 12 letture al minuto
    */
   getHistoricData(sensor: Sensor, minutes: number = 60): void {
     // Pulisci lo stato interno
@@ -213,7 +217,7 @@ export class SensorDataService implements OnDestroy {
     // Recupera tenant corrente
     const tenant = this.authService.userTenant();
     if (!tenant?.id) {
-      console.error('No tenant ID available');
+      console.error('ID tenant non disponibile');
       this.historicErrorSignal.set('Tenant non configurato');
       this.historicLoadingSignal.set(false);
       return;
@@ -229,17 +233,17 @@ export class SensorDataService implements OnDestroy {
       .set('metric', sensor.sensorType)         
       .set('limit', limit.toString());          
 
-    // Make GET request to backend
+    // Effettua richiesta GET al backend
     this.http.get<HistoricDataResponse[]>(`${this.apiUrl}/history`, { params })
       .pipe(
         tap((response) => {
-          // Transform backend response to ParsedSensorReading format
+          // Trasforma la risposta del backend nel formato ParsedSensorReading
           const readings = this.transformHistoricData(response, sensor);
           this.historicReadingsSignal.set(readings);
           this.historicLoadingSignal.set(false);
         }),
         catchError((err) => {
-          console.error('Failed to load sensor historic data:', err);
+          console.error('Errore nel caricamento dati storici del sensore:', err);
           this.historicErrorSignal.set(err);
           this.historicLoadingSignal.set(false);
           return of([]);
@@ -249,81 +253,82 @@ export class SensorDataService implements OnDestroy {
   }
 
   /**
-   * Connect to WebSocket and filter for specific sensor
+   * Stabilisce connessione WebSocket e filtra per il sensore specificato.
+   * I messaggi ricevuti vengono filtrati in base al tipo di sensore selezionato.
    */
   connectToSensor(sensor: Sensor): void {
-    // Clean up previous connections and data
+    // Pulisci connessioni e dati precedenti
     this.clearAll();
 
-    // Set selected sensor and initialize empty buffer
+    // Imposta sensore selezionato e inizializza buffer vuoto
     this.selectedSensorSignal.set(sensor);
     this.liveReadingsSignal.set([]);
 
-    // Get tenant natsId from auth service
+    // Recupera natsId del tenant dal servizio di autenticazione
     const tenant = this.authService.userTenant();
     if (!tenant?.natsId) {
-      console.error('No tenant natsId available');
-      this.wsErrorSignal.set('No tenant configured');
+      console.error('natsId del tenant non disponibile');
+      this.wsErrorSignal.set('Tenant non configurato');
       return;
     }
 
-    // Build WebSocket URL: ws://localhost:3000/ws/sensors/tenant_1
+    // Costruisce URL WebSocket: ws://localhost:3000/ws/sensors/tenant_1
     const wsEndpoint = `${this.wsUrl}/ws/sensors/${tenant.natsId}`;
-    console.log('Connecting to:', wsEndpoint);
-    console.log('Filtering for sensor type:', sensor.sensorType);
+    console.log('Connessione a:', wsEndpoint);
+    console.log('Filtro per tipo sensore:', sensor.sensorType);
 
     try {
       this.socket = new WebSocket(wsEndpoint);
 
-      // === WEBSOCKET EVENT HANDLERS ===
+      // === GESTORI EVENTI WEBSOCKET ===
 
       this.socket.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connesso');
         this.wsConnectedSignal.set(true);
         this.wsErrorSignal.set(null);
       };
 
-      // Receive new message (sensor reading)
+      // Ricezione nuovo messaggio (lettura sensore)
       this.socket.onmessage = (event) => {
         try {
-          // Parse raw JSON from server
+          // Parse del JSON grezzo dal server
           const raw: RawSensorReading = JSON.parse(event.data);
           
-          // Parse into structured reading
+          // Trasforma in lettura strutturata
           const parsed = this.parseMessage(raw);
           if (!parsed) {
-            console.warn('Failed to parse message:', raw);
+            console.warn('Impossibile effettuare il parsing del messaggio:', raw);
             return;
           }
 
-          // Filter: only process messages for the selected sensor type
+          // Filtro: elabora solo messaggi del tipo di sensore selezionato
           if (this.matchesSelectedSensor(parsed)) {
             this.addReading(parsed);
           }
         } catch (e) {
-          console.error('Failed to parse WebSocket message:', e);
+          console.error('Errore nel parsing del messaggio WebSocket:', e);
         }
       };
 
       this.socket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        this.wsErrorSignal.set('Connection error');
+        console.error('Errore WebSocket:', error);
+        this.wsErrorSignal.set('Errore di connessione');
       };
 
-      // Connection closed
+      // Connessione chiusa
       this.socket.onclose = (event) => {
-        console.log('WebSocket closed:', event.code, event.reason);
+        console.log('WebSocket chiuso:', event.code, event.reason);
         this.wsConnectedSignal.set(false);
 
-        // If closure was not clean, signal connection loss
+        // Se la chiusura non è stata pulita, segnala perdita connessione
         if (!event.wasClean) {
-          this.wsErrorSignal.set('Connection lost');
+          this.wsErrorSignal.set('Connessione persa');
         }
       };
     } catch (error) {
-      // Error creating WebSocket (e.g., malformed URL)
-      console.error('Failed to create WebSocket:', error);
-      this.wsErrorSignal.set('Failed to connect');
+      // Errore nella creazione del WebSocket (es: URL malformato)
+      console.error('Impossibile creare WebSocket:', error);
+      this.wsErrorSignal.set('Connessione fallita');
     }
   }
 

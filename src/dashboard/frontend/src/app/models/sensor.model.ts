@@ -1,5 +1,5 @@
 /**
- * Type custom per oggetto sensore, singolo reading e bundle storico
+ * Type custom per oggetto sensore, singolo reading e reading storico
  */
 
 export interface Sensor {

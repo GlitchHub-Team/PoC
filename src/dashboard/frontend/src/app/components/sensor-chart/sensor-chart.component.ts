@@ -122,7 +122,7 @@ export class SensorChartComponent implements OnInit, OnChanges {
         borderWidth: 2,
         fill: true,
         tension: 0.3,
-        pointRadius: this.readings.length > 50 ? 0 : 4,
+        pointRadius: 4,
         pointBackgroundColor: '#3b82f6'
       }]
     };

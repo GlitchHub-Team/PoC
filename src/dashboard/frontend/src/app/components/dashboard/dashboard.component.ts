@@ -1,4 +1,3 @@
-// components/dashboard/dashboard.component.ts
 import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -20,7 +19,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private sensorDataService = inject(SensorDataService);
 
-  // Auth signals
+  // Signal autenticazione
   protected currentUser = this.authService.currentUser;
   protected userName = this.authService.userName;
   protected userTenant = this.authService.userTenant;
@@ -42,16 +41,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   ];
 
-  // Sensor service signals
+  // Sensore selezionato al momento
   protected selectedSensor = this.sensorDataService.selectedSensor;
 
-  // Live data signals
+  // Signal dati real time
   protected liveReadings = this.sensorDataService.liveReadings;
   protected latestReading = this.sensorDataService.latestReading;
   protected wsConnected = this.sensorDataService.wsConnected;
   protected wsError = this.sensorDataService.wsError;
 
-  // Historic data signals
+  // Signals dati storici 
   protected historicReadings = this.sensorDataService.historicReadings;
   protected historicLoading = this.sensorDataService.historicLoading;
   protected historicError = this.sensorDataService.historicError;
@@ -69,7 +68,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.liveReadings().length > 0 || this.historicReadings().length > 0
   );
 
-  // Formatted latest value with unit
+  // Ultimo valore ricevuto + unità di misura
   protected latestValueDisplay = computed(() => {
     const reading = this.latestReading();
     const sensor = this.selectedSensor();
@@ -78,14 +77,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `${reading.value} ${sensor.unit}`;
   });
 
-  // Connection status text
+  // Signal per indicare lo stato della connessione
   protected connectionStatus = computed(() => {
     if (this.wsConnected()) return 'Live';
     if (this.wsError()) return 'Error';
     return 'Disconnected';
   });
 
-  // Readings count
+  // Numero di letture accumulate
   protected readingsCount = computed(() => this.liveReadings().length);
 
   ngOnInit(): void {
