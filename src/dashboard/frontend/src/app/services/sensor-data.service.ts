@@ -237,7 +237,7 @@ export class SensorDataService implements OnDestroy {
     this.http.get<HistoricDataResponse[]>(`${this.apiUrl}/history`, { params })
       .pipe(
         tap((response) => {
-          // Trasforma la risposta del backend nel formato ParsedSensorReading
+          // Trasforma la risposta del backend nel formato SensorReading
           const readings = this.transformHistoricData(response, sensor);
           this.historicReadingsSignal.set(readings);
           this.historicLoadingSignal.set(false);

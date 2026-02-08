@@ -43,7 +43,7 @@ func main() {
 
 	controllers.NatsConn = nc
 
-	// ============ API Routes (for Angular) ============
+	// ============ API Routes (Angular) ============
 	api := router.Group("/api")
 	{
 		// Public API routes
@@ -85,9 +85,7 @@ func main() {
 
 		public.GET("/tenant/create", controllers.TenantCreateGet)
 		public.POST("/tenant/create", controllers.TenantCreatePost)
-		public.GET("/tenant/list", controllers.TenantListController) // <-- lo messo qui per testyate
-
-		// API endpoint for historical metrics (public for testing)
+		public.GET("/tenant/list", controllers.TenantListController)
 
 	}
 

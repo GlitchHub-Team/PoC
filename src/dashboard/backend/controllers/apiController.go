@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"gin-test/dto"
 	"gin-test/initializers"
 	"gin-test/models"
 	"net/http"
@@ -12,45 +13,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Response structures
-type AuthResponse struct {
-	Token string           `json:"token"`
-	User  UserResponse     `json:"user"`
-}
-
-type UserResponse struct {
-	ID       uint            `json:"id"`
-	Username string          `json:"username"`
-	Tenant   *TenantResponse `json:"tenant,omitempty"`
-	CreatedAt time.Time		 `json:"createdAt"`
-}
-
-type TenantResponse struct {
-	ID     uint   `json:"id"`
-	Name   string `json:"name"`
-	NatsID string `json:"natsId"`
-}
-
-type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	TenantID uint   `json:"tenantId" binding:"required"`
-}
-
-type RegisterRequest struct {
-    Username string `json:"username" binding:"required"`
-    Password string `json:"password" binding:"required"`
-    TenantID uint   `json:"tenantId" binding:"required"`
-}
-/*
-	Questo file è una traduzione degli altri controller 
-	fatta per ritornare risposte in JSON
-*/
-
-
 // POST /api/login
 func LoginAPI(c *gin.Context) {
-	var req LoginRequest
+	var req dto.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
@@ -59,8 +24,8 @@ func LoginAPI(c *gin.Context) {
 
 	var user models.User
 	initializers.DB.Preload("Tenant").Where(
-		"username = ? AND tenant_id = ?", 
-		req.Username, 
+		"username = ? AND tenant_id = ?",
+		req.Username,
 		req.TenantID,
 	).First(&user)
 
@@ -70,7 +35,7 @@ func LoginAPI(c *gin.Context) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword(
-		[]byte(user.Password), 
+		[]byte(user.Password),
 		[]byte(req.Password),
 	); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -90,17 +55,17 @@ func LoginAPI(c *gin.Context) {
 	}
 
 	// Body della response
-	response := AuthResponse{
+	response := dto.AuthResponse{
 		Token: tokenString,
-		User: UserResponse{
-			ID:       user.ID,
-			Username: user.Username,
+		User: dto.UserResponse{
+			ID:        user.ID,
+			Username:  user.Username,
 			CreatedAt: user.CreatedAt,
 		},
 	}
 
 	if user.Tenant.ID != 0 {
-		response.User.Tenant = &TenantResponse{
+		response.User.Tenant = &dto.TenantResponse{
 			ID:     user.Tenant.ID,
 			Name:   user.Tenant.Name,
 			NatsID: user.Tenant.NatsID,
@@ -112,14 +77,14 @@ func LoginAPI(c *gin.Context) {
 
 // POST api/register
 func RegisterAPI(c *gin.Context) {
-	var req RegisterRequest
+	var req dto.RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Check se username già presente 
+	// Check se username già presente
 	var existingUser models.User
 	initializers.DB.Where(
 		"username = ? AND tenant_id = ?",
@@ -165,9 +130,9 @@ func RegisterAPI(c *gin.Context) {
 	}
 
 	// Body della response
-	response := AuthResponse{
+	response := dto.AuthResponse{
 		Token: tokenString,
-		User: UserResponse{
+		User: dto.UserResponse{
 			ID:        user.ID,
 			Username:  user.Username,
 			CreatedAt: user.CreatedAt,
@@ -175,10 +140,10 @@ func RegisterAPI(c *gin.Context) {
 	}
 
 	if user.Tenant.ID != 0 {
-		response.User.Tenant = &TenantResponse{
-			ID:        user.Tenant.ID,
-			Name:      user.Tenant.Name,
-			NatsID:    user.Tenant.NatsID,
+		response.User.Tenant = &dto.TenantResponse{
+			ID:     user.Tenant.ID,
+			Name:   user.Tenant.Name,
+			NatsID: user.Tenant.NatsID,
 		}
 	}
 
@@ -190,9 +155,9 @@ func GetTenantsAPI(c *gin.Context) {
 	var tenants []models.Tenant
 	models.GetAllTenants(&tenants)
 
-	var response []TenantResponse
+	var response []dto.TenantResponse
 	for _, t := range tenants {
-		response = append(response, TenantResponse{
+		response = append(response, dto.TenantResponse{
 			ID:     t.ID,
 			Name:   t.Name,
 			NatsID: t.NatsID,
@@ -207,14 +172,14 @@ func GetUserProfileAPI(c *gin.Context) {
 	u, _ := c.Get("currentUser")
 	user := u.(models.User)
 
-	response := UserResponse{
-		ID:       user.ID,
-		Username: user.Username,
+	response := dto.UserResponse{
+		ID:        user.ID,
+		Username:  user.Username,
 		CreatedAt: user.CreatedAt,
 	}
 
 	if user.Tenant.ID != 0 {
-		response.Tenant = &TenantResponse{
+		response.Tenant = &dto.TenantResponse{
 			ID:     user.Tenant.ID,
 			Name:   user.Tenant.Name,
 			NatsID: user.Tenant.NatsID,
