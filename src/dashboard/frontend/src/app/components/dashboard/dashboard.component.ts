@@ -42,24 +42,51 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   ];
 
-  // Sensor service signal
+  // Sensor service signals
   protected selectedSensor = this.sensorDataService.selectedSensor;
 
-  // Live
+  // Live data signals
   protected liveReadings = this.sensorDataService.liveReadings;
   protected latestReading = this.sensorDataService.latestReading;
   protected wsConnected = this.sensorDataService.wsConnected;
   protected wsError = this.sensorDataService.wsError;
 
-  // Historic
+  // Historic data signals
   protected historicReadings = this.sensorDataService.historicReadings;
   protected historicLoading = this.sensorDataService.historicLoading;
   protected historicError = this.sensorDataService.historicError;
 
-  // Computed signal
+  // Computed signals
   protected isLiveMode = computed(() => 
     this.wsConnected() || this.wsError() !== null || this.liveReadings().length > 0
   );
+
+  protected isHistoricMode = computed(() =>
+    !this.isLiveMode() && this.historicReadings().length > 0
+  );
+
+  protected hasData = computed(() =>
+    this.liveReadings().length > 0 || this.historicReadings().length > 0
+  );
+
+  // Formatted latest value with unit
+  protected latestValueDisplay = computed(() => {
+    const reading = this.latestReading();
+    const sensor = this.selectedSensor();
+    if (!reading || !sensor) return null;
+
+    return `${reading.value} ${sensor.unit}`;
+  });
+
+  // Connection status text
+  protected connectionStatus = computed(() => {
+    if (this.wsConnected()) return 'Live';
+    if (this.wsError()) return 'Error';
+    return 'Disconnected';
+  });
+
+  // Readings count
+  protected readingsCount = computed(() => this.liveReadings().length);
 
   ngOnInit(): void {
     this.authService.refreshProfile().subscribe();

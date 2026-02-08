@@ -1,8 +1,10 @@
 import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { tap, catchError, of } from 'rxjs';
-import { HistoricDataResponse, Sensor, SensorReading } from '../models/sensor.model';
+import { HistoricDataResponse, RawSensorReading, Sensor, SensorReading } from '../models/sensor.model';
+import { Tenant } from '../models/tenant.model';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 /**
  * Servizio per la gestione dei dati dei sensori IoT.
@@ -23,6 +25,7 @@ import { environment } from '../../environments/environment';
 export class SensorDataService implements OnDestroy {
   // Iniezione dipendenze
   private http = inject(HttpClient);
+  private authService = inject(AuthService);
   
   // URL delle API REST e WebSocket dalla configurazione environment
   private apiUrl = `${environment.apiUrl}`;
@@ -89,6 +92,76 @@ export class SensorDataService implements OnDestroy {
   readonly historicError = this.historicErrorSignal.asReadonly();
 
   /**
+   * Parse the subject string to extract tenant, gateway, and sensor type
+   * Format: sensors.{tenant_id}.{gateway}.{sensor_type}
+   */
+  private parseSubject(subject: string): { tenant: string; gateway: string; sensorType: string } | null {
+    const parts = subject.split('.');
+    
+    if (parts.length !== 4 || parts[0] !== 'sensors') {
+      console.warn('Invalid subject format:', subject);
+      return null;
+    }
+
+    return {
+      tenant: parts[1],   
+      gateway: parts[2],   
+      sensorType: parts[3] 
+    };
+  }
+
+  /**
+   * Extract numeric value based on sensor type
+   */
+  private extractValue(data: any, sensorType: string): number {
+    switch (sensorType) {
+      case 'heart_rate':
+        return data.bpm ?? 0;
+      case 'blood_oxygen':
+        return data.spO2 ?? 0;
+      default:
+        // Try to find any numeric value
+        const numericValue = Object.values(data).find(v => typeof v === 'number');
+        return (numericValue as number) ?? 0;
+    }
+  }
+
+  /**
+   * Parse the raw WebSocket message into a structured reading
+   */
+  private parseMessage(raw: RawSensorReading): SensorReading | null {
+    const subjectInfo = this.parseSubject(raw.subject);
+    if (!subjectInfo) return null;
+
+    try {
+      const data = JSON.parse(raw.data);
+      const value = this.extractValue(data, subjectInfo.sensorType);
+
+      return {
+        tenant: subjectInfo.tenant,
+        gateway: subjectInfo.gateway,
+        sensorType: subjectInfo.sensorType,
+        data: data,
+        value: value,
+        timestamp: new Date(raw.timestamp)
+      };
+    } catch (e) {
+      console.error('Failed to parse message data:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Check if a reading matches the selected sensor type
+   */
+  private matchesSelectedSensor(reading: SensorReading): boolean {
+    const selected = this.selectedSensorSignal();
+    if (!selected) return false;
+
+    return reading.sensorType === selected.sensorType;
+  }
+
+  /**
    * Recupera i dati storici di un sensore dal backend via HTTP.
    * I dati vengono salvati nel signal historicReadings, pronto
    * per essere utilizzato come dataset in un grafico Chart.js.
@@ -130,39 +203,57 @@ export class SensorDataService implements OnDestroy {
   }
 
   /**
-   * Stabilisce una connessione WebSocket per ricevere dati live da un sensore.
-   * I dati vengono accumulati nel signal liveReadings con una sliding window,
-   * permettendo al grafico Chart.js di aggiornarsi in tempo reale.
-   * 
-   * @param sensor - Sensore a cui connettersi per lo streaming
+   * Connect to WebSocket and filter for specific sensor
    */
   connectToSensor(sensor: Sensor): void {
-    // Pulisce connessioni e dati precedenti prima di iniziare
+    // Clean up previous connections and data
     this.clearAll();
 
-    // Imposta il sensore selezionato e inizializza il buffer vuoto
+    // Set selected sensor and initialize empty buffer
     this.selectedSensorSignal.set(sensor);
     this.liveReadingsSignal.set([]);
 
-    // Costruisce l'URL WebSocket con l'ID del sensore come query parameter
-    const wsEndpoint = `${this.wsUrl}/sensors/sensor?id=${sensor.id}`;
+    // Get tenant natsId from auth service
+    const tenant = this.authService.userTenant();
+    if (!tenant?.natsId) {
+      console.error('No tenant natsId available');
+      this.wsErrorSignal.set('No tenant configured');
+      return;
+    }
+
+    // Build WebSocket URL: ws://localhost:3000/ws/sensors/tenant_1
+    const wsEndpoint = `${this.wsUrl}/ws/sensors/${tenant.natsId}`;
+    console.log('Connecting to:', wsEndpoint);
+    console.log('Filtering for sensor type:', sensor.sensorType);
 
     try {
       this.socket = new WebSocket(wsEndpoint);
 
-      // === EVENT HANDLERS WEBSOCKET ===
+      // === WEBSOCKET EVENT HANDLERS ===
 
       this.socket.onopen = () => {
+        console.log('WebSocket connected');
         this.wsConnectedSignal.set(true);
+        this.wsErrorSignal.set(null);
       };
 
-      // Ricezione di un nuovo messaggio (lettura sensore)
+      // Receive new message (sensor reading)
       this.socket.onmessage = (event) => {
         try {
-          // Parsing del JSON ricevuto dal server
-          const reading: SensorReading = JSON.parse(event.data);
-          // Aggiunge la lettura al buffer con gestione sliding window
-          this.addReading(reading);
+          // Parse raw JSON from server
+          const raw: RawSensorReading = JSON.parse(event.data);
+          
+          // Parse into structured reading
+          const parsed = this.parseMessage(raw);
+          if (!parsed) {
+            console.warn('Failed to parse message:', raw);
+            return;
+          }
+
+          // Filter: only process messages for the selected sensor type
+          if (this.matchesSelectedSensor(parsed)) {
+            this.addReading(parsed);
+          }
         } catch (e) {
           console.error('Failed to parse WebSocket message:', e);
         }
@@ -173,18 +264,18 @@ export class SensorDataService implements OnDestroy {
         this.wsErrorSignal.set('Connection error');
       };
 
-      // Connessione chiusa
+      // Connection closed
       this.socket.onclose = (event) => {
         console.log('WebSocket closed:', event.code, event.reason);
         this.wsConnectedSignal.set(false);
 
-        // Se la chiusura non è stata pulita, segnala la perdita di connessione
+        // If closure was not clean, signal connection loss
         if (!event.wasClean) {
           this.wsErrorSignal.set('Connection lost');
         }
       };
     } catch (error) {
-      // Errore nella creazione del WebSocket (es. URL malformato)
+      // Error creating WebSocket (e.g., malformed URL)
       console.error('Failed to create WebSocket:', error);
       this.wsErrorSignal.set('Failed to connect');
     }

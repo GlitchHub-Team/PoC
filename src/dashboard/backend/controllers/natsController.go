@@ -20,7 +20,7 @@ var upgrader = websocket.Upgrader{
 func SensorStream(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf(err)
+		log.Printf("Error upgrading connection: %v", err)
 		return
 	}
 	defer conn.Close()
@@ -40,7 +40,7 @@ func SensorStream(c *gin.Context) {
 			"timestamp": time.Now().UnixMilli(),
 		})
 		if err != nil {
-			log.Printf(err)
+			log.Printf("Error writing JSON: %v", err)
 		}
 		//log.Printf(err)
 	})

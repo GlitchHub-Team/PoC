@@ -114,7 +114,7 @@ export class SensorChartComponent implements OnInit, OnChanges {
     this.chartData = {
       datasets: [{
         data: this.readings.map(r => ({
-          x: new Date(r.time).getTime(),
+          x: r.timestamp.getTime(),
           y: r.value
         })),
         borderColor: '#3b82f6',
@@ -122,7 +122,7 @@ export class SensorChartComponent implements OnInit, OnChanges {
         borderWidth: 2,
         fill: true,
         tension: 0.3,
-        pointRadius: 4,
+        pointRadius: this.readings.length > 50 ? 0 : 4,
         pointBackgroundColor: '#3b82f6'
       }]
     };

@@ -22,7 +22,9 @@ services:
       - ./src/nats-jetstream/certs:/etc/nats/certs
       - ./src/nats-jetstream/jwt-accounts:/etc/nats/jwt-accounts
     networks:
-      - poc-net
+      poc-net:
+        aliases:
+          - glitchhubteam.it    # <-- Add this alias
 
   timescaledb:
     image: timescale/timescaledb:latest-pg16
@@ -44,25 +46,20 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    environment:
+      - TENANT_1_CREDS=/app/creds/wsTenant1.creds
+      - TENANT_2_CREDS=/app/creds/wsTenant2.creds
+      - TENANT_CA=/app/creds/ca.pem
+      - NATS_URL=wss://glitchhubteam.it:443    # <-- Change to wss:// and use the alias
+    volumes:
+      - ./src/web-socket-client/wsTenant1.creds:/app/creds/wsTenant1.creds
+      - ./src/web-socket-client/wsTenant2.creds:/app/creds/wsTenant2.creds
+      - ./src/web-socket-client/certs/ca.pem:/app/creds/ca.pem
     depends_on:
       - timescaledb
+      - nats    # <-- Add this dependency
     networks:
       - poc-net
-
-  # proxy:
-  #   image: nginx
-  #   volumes:
-  #     - type: bind
-  #       source: ./proxy/nginx.conf
-  #       target: /etc/nginx/conf.d/default.conf
-  #       read_only: true
-  #   networks:
-  #     - pg-network
-  #   ports:
-  #     - 80:80
-  #   depends_on:
-  #     backend:
-  #       condition: service_started
 
   adminer:
     image: adminer

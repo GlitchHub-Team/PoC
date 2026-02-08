@@ -6,6 +6,7 @@ import (
 	"gin-test/middlewares"
 	"gin-test/migrate"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,10 +26,14 @@ func main() {
 
 	initializers.LoadTemplates(router, "templates")
 
-	//  NATS
-	nc, err := nats.Connect("ws://localhost:443",
-		nats.UserCredentials("../../web-socket-client/wsTenant1.creds"),
-		nats.RootCAs("../../web-socket-client/certs/ca.pem"),
+	// NATS
+	creds := os.Getenv("TENANT_1_CREDS")
+	caCert := os.Getenv("TENANT_CA")
+	natsURL := os.Getenv("NATS_URL")
+
+	nc, err := nats.Connect(natsURL,
+		nats.UserCredentials(creds),
+		nats.RootCAs(caCert),
 		nats.Timeout(10*time.Second),
 	)
 	if err != nil {

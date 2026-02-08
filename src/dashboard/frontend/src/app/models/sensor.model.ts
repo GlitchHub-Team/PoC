@@ -9,10 +9,19 @@ export interface Sensor {
   unit: string;
 }
 
+export interface RawSensorReading {
+  data: string;
+  subject: string;
+  timestamp: number;
+}
+
 export interface SensorReading {
-  time: string;
+  tenant: string;
+  gateway: string;
+  sensorType: string;
+  data: any;
   value: number;
-  gatewayId: string;
+  timestamp: Date;
 }
 
 export interface HistoricDataResponse {
