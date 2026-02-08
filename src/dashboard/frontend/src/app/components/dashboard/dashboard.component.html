@@ -100,9 +100,9 @@
                 } @else if (historicReadings().length === 0) {
                   <div class="panel-empty">Nessun dato disponibile.</div>
                 } @else {
-                  <app-sensor-chart
-                    [sensor]="sensor"
+                  <app-historic-chart
                     [readings]="historicReadings()"
+                    [windowSize]="50"
                   />
                   <div class="panel-footer">
                     <span>{{ historicReadings().length }} letture</span>

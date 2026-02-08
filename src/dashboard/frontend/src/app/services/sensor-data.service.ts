@@ -1,24 +1,11 @@
 import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { tap, catchError, of } from 'rxjs';
-import { HistoricDataResponse, RawSensorReading, Sensor, SensorReading } from '../models/sensor.model';
+import { HistoricReading, HistoryApiResponse, RawSensorReading, Sensor, SensorReading } from '../models/sensor.model';
 import { Tenant } from '../models/tenant.model';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
-/**
- * Servizio per la gestione dei dati dei sensori IoT.
- * 
- * Supporta due modalità di acquisizione dati:
- * 1. DATI STORICI: Recupero via HTTP GET di letture passate (ultimi N minuti)
- * 2. DATI LIVE: Streaming in tempo reale via WebSocket
- * 
- * I dati vengono esposti tramite Angular Signals, rendendoli perfettamente
- * compatibili con Chart.js: il componente grafico può sottoscriversi ai
- * signals e aggiornarsi automaticamente ad ogni nuova lettura.
- * 
- * Implementa OnDestroy per garantire la chiusura pulita delle connessioni WebSocket.
- */
 @Injectable({
   providedIn: 'root',
 })
@@ -164,93 +151,88 @@ export class SensorDataService implements OnDestroy {
     return reading.sensorType === selected.sensorType;
   }
 
-  /**
-   * Costruisce l'oggetto dati specifico per ogni tipo di sensore a partire dalla metrica.
-   * Necessario per uniformare il formato tra dati storici e dati live.
-   */
-  private buildSensorData(metric: HistoricDataResponse): any {
-    switch (metric.metric) {
-      case 'heart_rate':
-        return { bpm: metric.value, timestamp: metric.timestamp };
-      case 'blood_oxygen':
-        return { spO2: metric.value, timestamp: metric.timestamp };
-      default:
-        return { value: metric.value, timestamp: metric.timestamp };
-    }
+/**
+ * Estrae il valore numerico dalla lettura storica in base al tipo di sensore.
+ */
+private extractHistoricValue(reading: HistoricReading, sensorType: string): number {
+  switch (sensorType) {
+    case 'heart_rate':
+      return reading['bpm'] ?? 0;
+    case 'blood_oxygen':
+      return reading['spo2'] ?? 0;
+    default:
+      // Cerca qualsiasi valore numerico escludendo time e gateway_id
+      const numericKeys = Object.keys(reading).filter(
+        k => k !== 'time' && k !== 'gateway_id' && typeof reading[k] === 'number'
+      );
+      return numericKeys.length > 0 ? reading[numericKeys[0]] : 0;
+  }
+}
+
+/**
+ * Trasforma i dati storici del backend nel formato SensorReading.
+ */
+private transformHistoricData(
+  readings: HistoricReading[], 
+  sensor: Sensor,
+  tenantId: number
+): SensorReading[] {
+  return readings.map(reading => ({
+    tenant: `tenant_${tenantId}`,
+    gateway: reading.gateway_id,
+    sensorType: sensor.sensorType,
+    data: reading,
+    value: this.extractHistoricValue(reading, sensor.sensorType),
+    timestamp: new Date(reading.time)
+  }));
+}
+
+/**
+ * Recupera dati storici dall'API.
+ */
+getHistoricData(sensor: Sensor, minutes: number = 60): void {
+  this.clearAll();
+
+  this.selectedSensorSignal.set(sensor);
+  this.historicLoadingSignal.set(true);
+  this.historicErrorSignal.set(null);
+
+  const tenant = this.authService.userTenant();
+  if (!tenant?.id) {
+    console.error('ID tenant non disponibile');
+    this.historicErrorSignal.set('Tenant non configurato');
+    this.historicLoadingSignal.set(false);
+    return;
   }
 
-  /**
-   * Trasforma l'array HistoricMetric[] del backend in ParsedSensorReading[].
-   * Garantisce consistenza tra il formato dei dati live e storici.
-   */
-  private transformHistoricData(
-    metrics: HistoricDataResponse[], 
-    sensor: Sensor
-  ): SensorReading[] {
-    return metrics.map(metric => ({
-      tenant: `tenant_${metric.tenantId}`,  // Ricostruisce il formato natsId
-      gateway: 'unknown',                    // Non disponibile nei dati storici
-      sensorType: metric.metric,
-      data: this.buildSensorData(metric),
-      value: metric.value,
-      timestamp: new Date(metric.timestamp)
-    }));
-  }
+  const readingsPerMinute = 12;
+  const limit = minutes * readingsPerMinute;
 
-  /**
-   * Recupera dati storici dall'API.
-   * 
-   * @param sensor - Sensore di cui vogliamo lo storico
-   * @param minutes - Range temporale di interesse (default 60 minuti)
-   * 
-   * Calcolo numero letture: 1 lettura ogni 5 secondi = 12 letture al minuto
-   */
-  getHistoricData(sensor: Sensor, minutes: number = 60): void {
-    // Pulisci lo stato interno
-    this.clearAll();
+  const params = new HttpParams()
+    .set('tenant_id', tenant.id.toString())  
+    .set('metric', sensor.sensorType)         
+    .set('limit', limit.toString());          
 
-    // Imposta i signals per dati storici
-    this.selectedSensorSignal.set(sensor);
-    this.historicLoadingSignal.set(true);
-    this.historicErrorSignal.set(null);
-
-    // Recupera tenant corrente
-    const tenant = this.authService.userTenant();
-    if (!tenant?.id) {
-      console.error('ID tenant non disponibile');
-      this.historicErrorSignal.set('Tenant non configurato');
-      this.historicLoadingSignal.set(false);
-      return;
-    }
-
-    // Calcola il numero di punti da richiedere
-    const readingsPerMinute = 12;
-    const limit = minutes * readingsPerMinute;
-
-    // Costruisci la query
-    const params = new HttpParams()
-      .set('tenant_id', tenant.id.toString())  
-      .set('metric', sensor.sensorType)         
-      .set('limit', limit.toString());          
-
-    // Effettua richiesta GET al backend
-    this.http.get<HistoricDataResponse[]>(`${this.apiUrl}/history`, { params })
-      .pipe(
-        tap((response) => {
-          // Trasforma la risposta del backend nel formato SensorReading
-          const readings = this.transformHistoricData(response, sensor);
-          this.historicReadingsSignal.set(readings);
-          this.historicLoadingSignal.set(false);
-        }),
-        catchError((err) => {
-          console.error('Errore nel caricamento dati storici del sensore:', err);
-          this.historicErrorSignal.set(err);
-          this.historicLoadingSignal.set(false);
-          return of([]);
-        })
-      )
-      .subscribe();
-  }
+  this.http.get<HistoryApiResponse>(`${this.apiUrl}/history`, { params })
+    .pipe(
+      tap((response) => {
+        const readings = this.transformHistoricData(
+          response.data, 
+          sensor, 
+          tenant.id
+        );
+        this.historicReadingsSignal.set(readings);
+        this.historicLoadingSignal.set(false);
+      }),
+      catchError((err) => {
+        console.error('Errore nel caricamento dati storici:', err);
+        this.historicErrorSignal.set('Errore nel caricamento dati storici');
+        this.historicLoadingSignal.set(false);
+        return of({ data: [], count: 0 });
+      })
+    )
+    .subscribe();
+}
 
   /**
    * Stabilisce connessione WebSocket e filtra per il sensore specificato.

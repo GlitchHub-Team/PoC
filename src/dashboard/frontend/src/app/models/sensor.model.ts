@@ -24,10 +24,14 @@ export interface SensorReading {
   timestamp: Date;
 }
 
-export interface HistoricDataResponse {
-  id: number;
-  tenantId: string;
-  metric: string;
-  timestamp: string;
-  value: number;
+export interface HistoryApiResponse {
+  count: number;
+  data: HistoricReading[];
+}
+
+
+export interface HistoricReading {
+  time: string;
+  gateway_id: string;
+  [key: string]: any;  // Il reading del sensore
 }

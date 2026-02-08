@@ -5,11 +5,12 @@ import { AuthService } from '../../services/auth.service';
 import { SensorDataService } from '../../services/sensor-data.service';
 import { SensorChartComponent } from '../sensor-chart/sensor-chart.component';
 import { Sensor } from '../../models/sensor.model';
+import { HistoricChartComponent } from '../historic-chart/historic-chart.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SensorChartComponent],
+  imports: [CommonModule, RouterModule, SensorChartComponent, HistoricChartComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -94,6 +95,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.sensorDataService.disconnect();
   }
+
+  // Segnala se l'utente ha scelto di vedere dati storici o live 
 
   onLiveClick(sensor: Sensor, event: Event): void {
     event.stopPropagation();

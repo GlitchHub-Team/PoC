@@ -8,14 +8,6 @@ import { LoginRequest } from '../models/login-request.model';
 import { RegisterRequest } from '../models/register-request.model';
 import { AuthResponse } from '../models/auth-response.model';
 
-/**
- * Servizio di autenticazione dell'applicazione.
- * Gestisce login, registrazione, logout e persistenza della sessione utente.
- * 
- * Utilizza Angular Signals per lo stato reattivo e localStorage
- * per mantenere la sessione attiva tra i refresh della pagina.
- * La validità del token JWT viene verificata controllando la sua scadenza.
- */
 @Injectable({
   providedIn: 'root',
 })

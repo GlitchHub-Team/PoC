@@ -4,14 +4,6 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Tenant } from '../models/tenant.model';
 
-/**
- * Servizio per la gestione dei Tenant.
- * Utilizzato durante il login e la registrazione per mostrare
- * la lista dei tenant disponibili a cui l'utente può associarsi.
- * 
- * Implementa un pattern di caching con Angular Signals per evitare
- * chiamate API ripetute e garantire reattività nei componenti.
- */
 @Injectable({
   providedIn: 'root',
 })

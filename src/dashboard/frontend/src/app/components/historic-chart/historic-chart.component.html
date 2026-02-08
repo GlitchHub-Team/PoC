@@ -1,0 +1,30 @@
+<div class="chart-container">
+  <!-- Grafico -->
+  <div class="canvas-wrapper">
+    <canvas
+      baseChart
+      [type]="chartType"
+      [data]="chartData"
+      [options]="chartOptions"
+    ></canvas>
+  </div>
+
+  <!-- Slider -->
+  <div class="slider-wrapper">
+    <span class="slider-label">{{ startTime() }}</span>
+    <input
+      type="range"
+      class="slider"
+      [min]="0"
+      [max]="maxPosition()"
+      [value]="position()"
+      (input)="onSliderChange($event)"
+    />
+    <span class="slider-label">{{ endTime() }}</span>
+  </div>
+
+  <!-- Info -->
+  <div class="info">
+    {{ position() + 1 }} - {{ endIndex() }} di {{ readings.length }}
+  </div>
+</div>

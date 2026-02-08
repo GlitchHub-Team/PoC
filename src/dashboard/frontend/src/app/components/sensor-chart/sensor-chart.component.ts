@@ -23,6 +23,7 @@ import {
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 
+// Da chart.js v3+ bisogna registrare le i moduli che si utilizzano
 Chart.register(
   LineController,
   LineElement,
@@ -43,9 +44,11 @@ Chart.register(
 export class SensorChartComponent implements OnInit, OnChanges {
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
 
+  // Configurazione del sensore corrente e array di letture
   @Input() sensor!: Sensor;
   @Input() readings: SensorReading[] = [];
 
+  // Configurazione di base del grafico
   chartType: ChartType = 'line';
   chartData: ChartConfiguration['data'] = { datasets: [] };
   chartOptions: ChartConfiguration['options'] = {};
@@ -54,12 +57,14 @@ export class SensorChartComponent implements OnInit, OnChanges {
     this.initChart();
   }
 
+  // Se arrivano nuovi readings li disegnamo nel grafico
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['readings'] || changes['sensor']) {
       this.updateChart();
     }
   }
 
+  // Configurazione in dettaglio
   private initChart(): void {
     this.chartOptions = {
       responsive: true,
@@ -104,6 +109,7 @@ export class SensorChartComponent implements OnInit, OnChanges {
     this.updateChart();
   }
 
+  // Disegna nuovi punti nel grafico
   private updateChart(): void {
     if (!this.readings || this.readings.length === 0) {
       this.chartData = { datasets: [] };
