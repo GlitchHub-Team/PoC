@@ -12,12 +12,13 @@ Strumento CLI per la gestione di utenti, permessi e configurazione di NATS. Per 
 
 
 # Avvio
-## Avvio NATS, database TimeScaleDB e backend Gin
+## Avvio NATS, database TimeScaleDB, backend Gin e frontend Angular
 Per avviare NATS e TimeScaleDB utilizzare il file `docker-compose.yml` presente nella cartella principale del progetto. Eseguire il comando:
 ```
 sudo docker compose up -d
 ```
 Ricordarsi di eseguire il file di dump situato in `src/database/tables.sql` nel pannello `Adminer` una volta che si avvia il container docker.
+
 ## Avvio Publisher e Subscriber
 Per avviare il publisher(gateway simulato) e il subscriber (servizio di persistenza dati) utilizzare i comandi(dalla root del progetto):
 ```
@@ -72,5 +73,5 @@ La dashboard `NATS - Minimal` misura metriche di NATS (via exporter), non metric
 ## Nota importante su /metrics
 Su questa configurazione NATS non espone `http://localhost:8222/metrics` (può rispondere `404`): Prometheus legge le metriche tramite `nats-exporter` (`http://localhost:7777/metrics`).
 
-# Dashboard
+# Dashboard Angular
 Con l'avvio del file compose, la dashboard sarà accessibile all'indirizzo `http://localhost`

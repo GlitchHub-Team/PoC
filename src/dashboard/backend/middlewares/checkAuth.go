@@ -98,6 +98,60 @@ func PrivatePage(c *gin.Context) {
 	c.Next()
 }
 
+// Check auth header (inserito da Angular tramite HTTPInterceptor)
+func APIAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			return
+		}
+
+		// Extract token from "Bearer <token>"
+		tokenString := ""
+		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			tokenString = authHeader[7:]
+		} else {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+			return
+		}
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, &UnexpectedSigningMethodError{Method: token.Header["alg"]}
+			}
+			return []byte(os.Getenv("SECRET")), nil
+		})
+
+		if err != nil || !token.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			return
+		}
+
+		if float64(time.Now().Unix()) > claims["exp"].(float64) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
+			return
+		}
+
+		var user models.User
+		models.GetUserById(&user, int(claims["id"].(float64)))
+
+		if user.ID == 0 {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+			return
+		}
+
+		c.Set("currentUser", user)
+		c.Next()
+	}
+}
+
 
 // func CheckAuth(c *gin.Context) {
 

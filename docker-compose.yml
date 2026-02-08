@@ -22,7 +22,9 @@ services:
       - ./src/nats-jetstream/certs:/etc/nats/certs
       - ./src/nats-jetstream/jwt-accounts:/etc/nats/jwt-accounts
     networks:
-      - poc-net
+      poc-net:
+        aliases:
+          - glitchhubteam.it 
 
   timescaledb:
     image: timescale/timescaledb:latest-pg16
@@ -44,8 +46,29 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3001:3001"
+    environment:
+      - TENANT_1_CREDS=/app/creds/wsTenant1.creds
+      - TENANT_2_CREDS=/app/creds/wsTenant2.creds
+      - TENANT_CA=/app/creds/ca.pem
+      - NATS_URL=wss://glitchhubteam.it:443    
+    volumes:
+      - ./src/web-socket-client/wsTenant1.creds:/app/creds/wsTenant1.creds
+      - ./src/web-socket-client/wsTenant2.creds:/app/creds/wsTenant2.creds
+      - ./src/web-socket-client/certs/ca.pem:/app/creds/ca.pem
     depends_on:
       - timescaledb
+      - nats    
+    networks:
+      - poc-net
+
+  dashboard-frontend:
+    build:
+      context: src/dashboard/frontend
+      dockerfile: Dockerfile
+    container_name: dashboard-frontend
+    depends_on:
+      dashboard-backend:
+        condition: service_started
     networks:
       - poc-net
 
@@ -62,6 +85,8 @@ services:
       - 80:80
     depends_on:
       dashboard-backend:
+        condition: service_started
+      dashboard-frontend:
         condition: service_started
 
   adminer:
