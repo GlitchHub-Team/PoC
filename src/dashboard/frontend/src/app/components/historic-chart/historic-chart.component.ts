@@ -11,7 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartType } from 'chart.js';
-import { SensorReading } from '../../models/sensor.model';
+import { Sensor, SensorReading } from '../../models/sensor.model';
 
 import {
   Chart,
@@ -46,6 +46,9 @@ Chart.register(
 export class HistoricChartComponent implements OnInit, OnChanges {
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
 
+  // Configurazione del sensore richiesto
+  @Input() sensor!: Sensor; 
+
   // Array delle letture e numero di punti visibili nel grafico
   @Input() readings: SensorReading[] = [];
   @Input() windowSize: number = 50;
@@ -62,31 +65,48 @@ export class HistoricChartComponent implements OnInit, OnChanges {
   maxPosition = computed(() => Math.max(0, this.readings.length - this.windowSize));
   endIndex = computed(() => Math.min(this.position() + this.windowSize, this.readings.length));
   
+  // Finestra di reading visibili al momento
   visibleReadings = computed(() => 
     this.readings.slice(this.position(), this.endIndex())
   );
 
-  startTime = computed(() => {
-    const reading = this.readings[this.position()];
-    return reading?.timestamp.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) ?? '-';
-  });
+  startTime = computed(() => this.formatTimestamp(this.readings[this.position()]?.timestamp));
 
-  endTime = computed(() => {
-    const reading = this.readings[this.endIndex() - 1];
-    return reading?.timestamp.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) ?? '-';
-  });
+  endTime = computed(() => this.formatTimestamp(this.readings[this.endIndex() - 1]?.timestamp));
 
   ngOnInit(): void {
     this.initChart();
   }
 
   // Se arrivano nuovi dati sposta la finestra alla fine
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['readings'] && this.readings.length > 0) {
-      this.position.set(this.maxPosition());
-      this.updateChart();
-    }
+ngOnChanges(changes: SimpleChanges): void {
+  if (changes['readings'] && this.readings.length > 0) {
+    console.log('Nuovi dati ricevuti:', this.readings.length);
+    console.log('maxPosition prima:', this.maxPosition());
+    
+    this.position.set(this.maxPosition());
+    
+    console.log('position dopo:', this.position());
+    this.updateChart();
   }
+}
+
+  /**
+   * Metodo che aiuta a formattare il timestamp del reading di un sensore 
+   * nel formato a 24 ore.
+   * @param timestamp: - il timestamp da convertire
+   * @returns - un orario nel formato a 24 ore
+   */
+  private formatTimestamp(timestamp: string | Date | undefined): string {
+    if (!timestamp) return '-';
+    
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return date.toLocaleTimeString('it-IT', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false
+    });
+}
 
   // Configurazione in dettaglio
   private initChart() {
@@ -101,9 +121,18 @@ export class HistoricChartComponent implements OnInit, OnChanges {
             unit: 'minute',
             displayFormats: { minute: 'HH:mm' }
           },
+          title: {
+            display: true,
+            text: 'Timestamp'
+          },
           ticks: { maxTicksLimit: 6 }
         },
-        y: {}
+        y: {
+          title: {
+            display: true,
+            text: this.sensor?.unit || 'Value'
+          }
+        }
       },
       plugins: {
         legend: { display: false },
@@ -143,7 +172,7 @@ export class HistoricChartComponent implements OnInit, OnChanges {
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: 2,
         pointBackgroundColor: '#3b82f6',
         tension: 0.2,
         fill: true,

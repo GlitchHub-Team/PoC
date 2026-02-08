@@ -83,7 +83,7 @@ export class SensorChartComponent implements OnInit, OnChanges {
           },
           title: {
             display: true,
-            text: 'Time'
+            text: 'Timestamp'
           }
         },
         y: {
@@ -128,7 +128,7 @@ export class SensorChartComponent implements OnInit, OnChanges {
         borderWidth: 2,
         fill: true,
         tension: 0.3,
-        pointRadius: 4,
+        pointRadius: 2,
         pointBackgroundColor: '#3b82f6'
       }]
     };

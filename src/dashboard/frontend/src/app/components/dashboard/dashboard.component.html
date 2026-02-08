@@ -50,7 +50,6 @@
           </div>
 
           <div class="chart-panel" [class.live]="isLiveMode()" [class.history]="!isLiveMode()">
-            <!-- Panel Header -->
             <div class="panel-header">
               <div class="panel-info">
                 <span class="panel-sensor-name">{{ sensor.name }}</span>
@@ -101,14 +100,15 @@
                   <div class="panel-empty">Nessun dato disponibile.</div>
                 } @else {
                   <app-historic-chart
+                    [sensor]="sensor"
                     [readings]="historicReadings()"
                     [windowSize]="50"
                   />
                   <div class="panel-footer">
                     <span>{{ historicReadings().length }} letture</span>
                     <span>
-                      {{ historicReadings()[0]?.timestamp | date:'short' }} - 
-                      {{ historicReadings()[historicReadings().length - 1]?.timestamp | date:'short' }}
+                      {{ historicReadings()[0]?.timestamp | date:'d-MM-yyyy, HH:mm' }} - 
+                      {{ historicReadings()[historicReadings().length - 1]?.timestamp | date:'d-MM-yyyy, HH:mm' }}
                     </span>
                   </div>
                 }
