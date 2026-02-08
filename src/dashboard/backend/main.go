@@ -51,6 +51,7 @@ func main() {
 		api.POST("/register", controllers.RegisterAPI)
 		api.GET("/tenants", controllers.GetTenantsAPI)
 		api.GET("/history", controllers.HistoryGet)
+		api.GET("/ws/sensors/:tenant", controllers.SensorStream)
 
 		// Protected API routes
 		protected := api.Group("/")
@@ -84,8 +85,7 @@ func main() {
 
 		public.GET("/tenant/create", controllers.TenantCreateGet)
 		public.POST("/tenant/create", controllers.TenantCreatePost)
-		public.GET("/tenant/list", controllers.TenantListController)
-		public.GET("/ws/sensors/:tenant", controllers.SensorStream) // <-- lo messo qui per testyate
+		public.GET("/tenant/list", controllers.TenantListController) // <-- lo messo qui per testyate
 
 		// API endpoint for historical metrics (public for testing)
 
