@@ -25,5 +25,9 @@ export interface SensorReading {
 }
 
 export interface HistoricDataResponse {
-    readings: SensorReading[];
+  id: number;
+  tenantId: string;
+  metric: string;
+  timestamp: string;
+  value: number;
 }

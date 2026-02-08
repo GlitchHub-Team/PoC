@@ -50,6 +50,7 @@ func main() {
 		api.POST("/login", controllers.LoginAPI)
 		api.POST("/register", controllers.RegisterAPI)
 		api.GET("/tenants", controllers.GetTenantsAPI)
+		api.GET("/history", controllers.HistoryGet)
 
 		// Protected API routes
 		protected := api.Group("/")
@@ -87,7 +88,7 @@ func main() {
 		public.GET("/ws/sensors/:tenant", controllers.SensorStream) // <-- lo messo qui per testyate
 
 		// API endpoint for historical metrics (public for testing)
-		public.GET("/api/history", controllers.HistoryGet)
+
 	}
 
 	// Pagine accessibili a utenti autorizzati

@@ -162,41 +162,87 @@ export class SensorDataService implements OnDestroy {
   }
 
   /**
-   * Recupera i dati storici di un sensore dal backend via HTTP.
-   * I dati vengono salvati nel signal historicReadings, pronto
-   * per essere utilizzato come dataset in un grafico Chart.js.
+   * Build sensor-specific data object from metric
+   */
+  private buildSensorData(metric: HistoricDataResponse): any {
+    switch (metric.metric) {
+      case 'heart_rate':
+        return { bpm: metric.value, timestamp: metric.timestamp };
+      case 'blood_oxygen':
+        return { spO2: metric.value, timestamp: metric.timestamp };
+      default:
+        return { value: metric.value, timestamp: metric.timestamp };
+    }
+  }
+
+  /**
+   * Transform backend HistoricMetric[] to ParsedSensorReading[]
+   * This ensures consistency between live and historic data formats
+   */
+  private transformHistoricData(
+    metrics: HistoricDataResponse[], 
+    sensor: Sensor
+  ): SensorReading[] {
+    return metrics.map(metric => ({
+      tenant: `tenant_${metric.tenantId}`,  // Reconstruct natsId format
+      gateway: 'unknown',                      // Not available in historic data
+      sensorType: metric.metric,
+      data: this.buildSensorData(metric),
+      value: metric.value,
+      timestamp: new Date(metric.timestamp)
+    }));
+  }
+
+  /**
+   * Recupera dati storici dall'API
    * 
-   * @param sensor - Sensore di cui recuperare lo storico
-   * @param minutes - Finestra temporale in minuti (default: ultima ora)
+   * @param sensor - Sensore di cui vogliamo lo storico
+   * @param minutes - Range temporale di interesse (default 60 minuti)
+   * 
+   * Calcolo numero letture: 1 lettura every 5 secondi = 12 letture al minuto
    */
   getHistoricData(sensor: Sensor, minutes: number = 60): void {
-    // Pulisce lo stato precedente
+    // Pulisci lo stato interno
     this.clearAll();
 
-    // Imposta il sensore selezionato e attiva lo stato di loading
+    // Imposta i signals per dati storici
     this.selectedSensorSignal.set(sensor);
     this.historicLoadingSignal.set(true);
+    this.historicErrorSignal.set(null);
 
-    // Costruisce i query parameters per la richiesta
+    // Recupera tenant corrente
+    const tenant = this.authService.userTenant();
+    if (!tenant?.id) {
+      console.error('No tenant ID available');
+      this.historicErrorSignal.set('Tenant non configurato');
+      this.historicLoadingSignal.set(false);
+      return;
+    }
+
+    // Calcola il numero di punti da richiedere
+    const readingsPerMinute = 12;
+    const limit = minutes * readingsPerMinute;
+
+    // Costruisci la query
     const params = new HttpParams()
-      .set('type', sensor.sensorType)   // Tipo sensore 
-      .set('minutes', minutes.toString()); // Intervallo temporale richiesto
+      .set('tenant_id', tenant.id.toString())  
+      .set('metric', sensor.sensorType)         
+      .set('limit', limit.toString());          
 
-    // Effettua la chiamata GET al backend
-    this.http.get<HistoricDataResponse>(`${this.apiUrl}/sensors/history`, { params })
+    // Make GET request to backend
+    this.http.get<HistoricDataResponse[]>(`${this.apiUrl}/history`, { params })
       .pipe(
         tap((response) => {
-          // Successo: popola il signal con le letture (o array vuoto se null)
-          this.historicReadingsSignal.set(response.readings ?? []);
+          // Transform backend response to ParsedSensorReading format
+          const readings = this.transformHistoricData(response, sensor);
+          this.historicReadingsSignal.set(readings);
           this.historicLoadingSignal.set(false);
         }),
         catchError((err) => {
-          // Errore: logga, imposta messaggio errore e disattiva loading
           console.error('Failed to load sensor historic data:', err);
-          this.historicErrorSignal.set('Failed to load data');
+          this.historicErrorSignal.set(err);
           this.historicLoadingSignal.set(false);
-          // Ritorna observable vuoto per non interrompere lo stream
-          return of({ readings: [] });
+          return of([]);
         })
       )
       .subscribe();
