@@ -67,7 +67,8 @@ services:
       dockerfile: Dockerfile
     container_name: dashboard-frontend
     depends_on:
-      - dashboard-backend
+      dashboard-backend:
+        condition: service_started
     networks:
       - poc-net
 
@@ -83,8 +84,10 @@ services:
     ports:
       - 80:80
     depends_on:
-      - dashboard-backend
-      - dashboard-frontend
+      dashboard-backend:
+        condition: service_started
+      dashboard-frontend:
+        condition: service_started
 
   adminer:
     image: adminer
