@@ -209,7 +209,7 @@ getHistoricData(sensor: Sensor, minutes: number = 60): void {
   const limit = minutes * readingsPerMinute;
 
   const params = new HttpParams()
-    .set('tenant_id', tenant.id.toString())  
+    .set('tenant_id', tenant.natsId.toString())  
     .set('metric', sensor.sensorType)         
     .set('limit', limit.toString());          
 

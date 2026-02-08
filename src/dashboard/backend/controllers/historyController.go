@@ -21,12 +21,6 @@ func HistoryGet(c *gin.Context) {
 		return
 	}
 
-	tenantID, err := strconv.Atoi(tenantQ)
-	if err != nil || tenantID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant_id"})
-		return
-	}
-
 	validIdent := regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 	if !validIdent.MatchString(metric) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid metric name"})
@@ -41,10 +35,9 @@ func HistoryGet(c *gin.Context) {
 		limit = 10000
 	}
 
-	schema := fmt.Sprintf("tenant_%d", tenantID)
 	table := metric
 
-	query := fmt.Sprintf(`SELECT * FROM (SELECT * FROM %s.%s  ORDER BY time DESC LIMIT %d) AS recent ORDER BY time ASC`, schema, table, limit)
+	query := fmt.Sprintf(`SELECT * FROM (SELECT * FROM %s.%s  ORDER BY time DESC LIMIT %d) AS recent ORDER BY time ASC`, tenantQ, table, limit)
 
 	rows, err := initializers.DB.Raw(query).Rows()
 	if err != nil {
