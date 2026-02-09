@@ -53,6 +53,6 @@ Vi si può accedere usando le credenziali:
 - **Angular.js**: Framework usato per *frontend* della [dashboard principale](#dashboard-poc)
 - **Prometheus + Grafana**: Sistema di *observability* per controllo delle metriche di sistema
 
-Tecnologie secondarie
+### Tecnologie secondarie
 - **Nginx**: Sistema di reverse proxy
 - **Adminer**: Gestione del database
