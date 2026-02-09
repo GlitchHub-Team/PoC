@@ -1,77 +1,58 @@
 # PoC
-Repository principale del Proof of Concept di GlitchHub Team
+Repository principale del Proof of Concept di GlitchHub Team.
 
-# NSC(opzionale)
-Strumento CLI per la gestione di utenti, permessi e configurazione di NATS. Per installarlo, seguire le istruzioni ufficiali: [https://docs.nats.io/nats-tools/nsc/installation](https://github.com/nats-io/nsc#install)
+## Prerequisiti
+- Avere [Docker](https://www.docker.com/get-started/) installato nel proprio sistema
+- Eseguire il **Docker Engine**
 
-## Configurazione NSC(opzionale)
-- Eseguire comando `nsc init`
-- Eseguire comando `nsc import operator --jwt ./nats-jetstream/jwt-accounts/operator/operator.jwt`
-- Eseguire comando `nsc pull -A --ca-cert nats-jetstream/certs/ca.pem` per scaricare account
-- Controlla che l'operator sia stato configurato con `nsc describe operator`
+## Esecuzione
+Non sono richiesti ulteriori passaggi di configurazione in quanto tutti i file con variabili d'ambiente e *secrets* sono presenti nella repository per questioni di semplicità.
 
-
-# Avvio
-## Avvio NATS, database TimeScaleDB, backend Gin e frontend Angular
-Per avviare NATS e TimeScaleDB utilizzare il file `docker-compose.yml` presente nella cartella principale del progetto. Eseguire il comando:
-```
-sudo docker compose up -d
-```
-Ricordarsi di eseguire il file di dump situato in `src/database/tables.sql` nel pannello `Adminer` una volta che si avvia il container docker.
-
-## Avvio Publisher e Subscriber
-Per avviare il publisher(gateway simulato) e il subscriber (servizio di persistenza dati) utilizzare i comandi(dalla root del progetto):
-```
-go run -C src/publisher .
-
-go run -C src/subscriber .
+Per eseguire il Proof of Concept, è sufficiente eseguire sul proprio terminale il seguente comando all'interno della cartella del Proof of Concept
+```bash
+docker compose up -d --build
 ```
 
-# Monitoring NATS (Prometheus + Grafana)
-Il progetto include una stack di monitoring pronta via `docker-compose.yml` per osservare NATS senza modificare il codice Go.
-
-## Servizi e porte (host)
-- NATS client: `4222`
-- NATS monitoring (JSON): `8222` (es. `/varz`, `/connz`)
-- NATS Prometheus exporter: `7777` (espone `/metrics`)
-- Prometheus: `9090`
-- Grafana: `3000` (login `admin` / `admin`)
-
-## Avvio e verifiche rapide
-1) Avvia i container (se non già fatto):
-```
-sudo docker compose up -d
+Per interrompere l'esecuzione è sufficiente eseguire sulla stessa cartella il comando:
+```bash
+docker compose down
 ```
 
-2) Verifica che l'exporter esponga metriche Prometheus:
-```
-curl -i http://localhost:7777/metrics | head -n 20
-```
+Quindi sarà possibile accedere ai seguenti servizi:
+- Dashboard del PoC (Gin + Angular) all'indirizzo http://localhost
+- Dashboard di **Grafana** all'indirizzo http://localhost:3000/d/nats-minimal/nats-minimal
+- Dashboard di **Adminer** all'indirizzo http://localhost:8081
 
-3) Verifica che Prometheus scrapi NATS:
-- Apri `http://localhost:9090/targets` e controlla che il job `nats` sia `UP`
-- Oppure query in Prometheus: `up{job="nats"} == 1`
+### Dashboard PoC
+È la dashboard principale del PoC, il cui backend è creato in **Gin** e frontend in **Angular.js**. Permette di visualizzare dati in real-time e dati storici di sensori simulati associati un certo *tenant*.
 
-4) Apri Grafana:
-- `http://localhost:3000`
-- Dashboard: folder `NATS` → `NATS - Minimal`
+Per poter accedere è necessario creare prima un utente associato al "Tenant 1" e poi accedere con tali credenziali.
 
-## Generare traffico (per vedere i grafici muoversi)
-Avvia il publisher (e opzionalmente il subscriber):
-```
-go run -C src/publisher .
-go run -C src/subscriber .
-```
-I pannelli “Messaggi / s” e “Bytes / s” aumentano quando passano messaggi su NATS.
+### Dashboard di Grafana
+**Grafana** è lo strumento di *observability* scelto dal gruppo, permette di visualizzare il numero di connessioni attive e la mole di dati inviati nel sistema.
 
-## Metriche misurate (NATS)
-La dashboard `NATS - Minimal` misura metriche di NATS (via exporter), non metriche custom del codice applicativo che sono ovviamente implementabili:
-- Connessioni attive: numero di client connessi a NATS (`*_varz_connections`)
-- Messaggi / s: rate dei contatori messaggi in/out (`rate(*_varz_in_msgs[1m])`, `rate(*_varz_out_msgs[1m])`)
-- Bytes / s: rate dei contatori byte in/out (`rate(*_varz_in_bytes[1m])`, `rate(*_varz_out_bytes[1m])`)
+Vi si può accedere con le credenziali `admin / admin`.
 
-## Nota importante su /metrics
-Su questa configurazione NATS non espone `http://localhost:8222/metrics` (può rispondere `404`): Prometheus legge le metriche tramite `nats-exporter` (`http://localhost:7777/metrics`).
+### Dashboard di Adminer
+**Adminer** è uno strumento di gestione del database, utile in fase di sviluppo.
 
-# Dashboard Angular
-Con l'avvio del file compose, la dashboard sarà accessibile all'indirizzo `http://localhost`
+Vi si può accedere usando le credenziali:
+- **Sistema**: PostgreSQL
+- **Server**: `timescaledb`
+- **Utente**: `admin`
+- **Password**: `admin`
+- **Database**: `sensors_db`
+
+## Tecnologie usate
+- **Go**:
+    - Usato nel client NATS di *publisher* e *subscriber*
+    - Usato come linguaggio per *backend* della [dashboard principale](#dashboard-poc)
+- **NATS JetStream**: Sistema di messaggistica che consente a publisher e subscriber di comunicare in maniera sicura
+- **TimescaleDB**: Sistema di persistenza di dati di *publisher* e *subscriber* e persistenza di informazioni di autenticazione
+- **Gin**: Framework web per *backend* della [dashboard principale](#dashboard-poc)
+- **Angular.js**: Framework usato per *frontend* della [dashboard principale](#dashboard-poc)
+- **Prometheus + Grafana**: Sistema di *observability* per controllo delle metriche di sistema
+
+Tecnologie secondarie
+- **Nginx**: Sistema di reverse proxy
+- **Adminer**: Gestione del database

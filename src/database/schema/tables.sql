@@ -54,3 +54,16 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA tenant_2 TO tenant_
 ALTER DEFAULT PRIVILEGES IN SCHEMA tenant_2
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tenant_2_user;
 ALTER ROLE tenant_2_user SET search_path TO tenant_2, public;
+
+-------------- Creazione utenti dashboard -------------------------
+-- NOTA: creiamo solo i tenant per poter far funzionare la connessione con NATS
+-- ci pensa migrate.go a creare il resto
+CREATE TABLE IF NOT EXISTS tenants(
+    id          SERIAL      PRIMARY KEY,
+    nats_id     TEXT        NOT NULL,
+    name        TEXT        NOT NULL,
+    created_at  TIMESTAMPTZ,
+    updated_at  TIMESTAMPTZ
+);
+
+INSERT INTO tenants(nats_id, name) VALUES ('tenant_1', 'Tenant 1');

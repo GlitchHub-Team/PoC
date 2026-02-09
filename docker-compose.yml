@@ -1,4 +1,6 @@
 services:
+
+  # NATS ---------------------------------------------------------------------------------------------------------------
   nats:
     image: nats:latest
     container_name: nats-server
@@ -26,32 +28,63 @@ services:
         aliases:
           - glitchhubteam.it 
 
-  timescaledb:
-    image: timescale/timescaledb:latest-pg16
-    container_name: timescaledb
+  nats-exporter:
+    image: natsio/prometheus-nats-exporter:latest
+    container_name: nats-exporter
     ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=sensors_db
-      - PGDATA=/var/lib/postgresql/data
+      - "7777:7777"
+    command:
+      - "-varz"
+      - "http://nats-server:8222"
+    depends_on:
+      - nats
+    networks:
+      - poc-net
+
+  # TimescaleDB --------------------------------------------------------------------------------------------------------
+  timescaledb:
+    build:
+      context: src/database
+      dockerfile: Dockerfile
+    container_name: timescaledb
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "sensors_db"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_interval: 10s
+      start_period: 60s
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./src/database/schema/tables.sql:/root/schema/tables.sql
-      - ./src/database/setup.sh:/root/setup.sh
     networks:
       poc-net:
         aliases:
           - timescaledb
 
+  adminer:
+    image: adminer
+    restart: always
+    environment:
+      - ADMINER_DEFAULT_SERVER=timescaledb
+    ports:
+      - 8081:8080
+    depends_on:
+      - timescaledb
+    networks:
+      - poc-net
+
+  # Pub/sub ------------------------------------------------------------------------------------------------------------
   publisher:
     build:
       context: ./src/publisher
       dockerfile: Dockerfile
     container_name: publisher
     depends_on:
-      - nats
+      nats:
+        condition: service_started
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - poc-net
     volumes:
@@ -64,14 +97,21 @@ services:
       dockerfile: Dockerfile
     container_name: subscriber
     depends_on:
-      - nats
-      - timescaledb
+      nats:
+        condition: service_started
+      timescaledb:
+        condition: service_healthy
+      publisher:
+        condition: service_started
+    restart: unless-stopped
     networks:
       - poc-net
     volumes:
       - ./src/subscriber/certs/ca.pem:/app/certs/ca.pem
       - ./src/subscriber/dataconsumer.creds:/app/dataconsumer.creds
-    
+  
+  # Dashboard ----------------------------------------------------------------------------------------------------------
+  # Backend: Gin
   dashboard-backend:
     build:
       context: src/dashboard/backend
@@ -88,11 +128,14 @@ services:
       - ./src/web-socket-client/wsTenant2.creds:/app/creds/wsTenant2.creds
       - ./src/web-socket-client/certs/ca.pem:/app/creds/ca.pem
     depends_on:
-      - timescaledb
-      - nats    
+      nats:
+        condition: service_started
+      timescaledb:
+        condition: service_healthy
     networks:
       - poc-net
 
+  # Frontend: Angular
   dashboard-frontend:
     build:
       context: src/dashboard/frontend
@@ -104,6 +147,41 @@ services:
     networks:
       - poc-net
 
+  # Prometheus + Grafana -----------------------------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    depends_on:
+      - nats
+      - nats-exporter
+    networks:
+      - poc-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - poc-net
+
+  # Nginx --------------------------------------------------------------------------------------------------------------
   proxy:
     image: nginx
     volumes:
@@ -120,86 +198,6 @@ services:
         condition: service_started
       dashboard-frontend:
         condition: service_started
-
-  adminer:
-    image: adminer
-    restart: always
-    environment:
-      - ADMINER_DEFAULT_SERVER=timescaledb
-    ports:
-      - 8081:8080
-    depends_on:
-      - timescaledb
-    networks:
-      - poc-net
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-    depends_on:
-      - nats
-      - nats-exporter
-    networks:
-      - poc-net
-
-  nats-exporter:
-    image: natsio/prometheus-nats-exporter:latest
-    container_name: nats-exporter
-    ports:
-      - "7777:7777"
-    command:
-      - "-varz"
-      - "http://nats-server:8222"
-    depends_on:
-      - nats
-    networks:
-      - poc-net
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-    depends_on:
-      - prometheus
-    networks:
-      - poc-net
-  
-  nats-publisher:
-    build:
-      context: src/publisher
-      dockerfile: Dockerfile
-    container_name: nats-publisher
-
-    depends_on:
-      - nats
-    networks:
-      - poc-net
-  
-  nats-subscriber:
-    build:
-      context: src/subscriber
-      dockerfile: Dockerfile
-    container_name: nats-subscriber
-    depends_on:
-      - nats
-      - timescaledb
-    networks:
-      - poc-net
 
 networks:
   poc-net:
