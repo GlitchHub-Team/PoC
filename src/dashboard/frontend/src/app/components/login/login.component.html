@@ -16,7 +16,7 @@
           } @else if (tenantError()) {
             <option value="">Errore nel caricamento dei tenants</option>
           } @else {
-            <option value="">Select your tenant</option>
+            <option value="">Seleziona il tenant</option>
             @for (tenant of tenants(); track tenant.id) {
               <option [value]="tenant.id">
                 {{ tenant.name }}
