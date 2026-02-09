@@ -13,15 +13,15 @@ Per eseguire il Proof of Concept, è sufficiente eseguire sul proprio terminale 
 docker compose up -d --build
 ```
 
-Per interrompere l'esecuzione è sufficiente eseguire sulla stessa cartella il comando:
-```bash
-docker compose down
-```
-
-Quindi sarà possibile accedere ai seguenti servizi:
+Sarà possibile accedere ai seguenti servizi:
 - Dashboard del PoC (Gin + Angular) all'indirizzo http://localhost
 - Dashboard di **Grafana** all'indirizzo http://localhost:3000/d/nats-minimal/nats-minimal
 - Dashboard di **Adminer** all'indirizzo http://localhost:8081
+
+Quindi, per interrompere l'esecuzione è sufficiente eseguire sulla stessa cartella il comando:
+```bash
+docker compose down
+```
 
 ### Dashboard PoC
 È la dashboard principale del PoC, il cui backend è creato in **Gin** e frontend in **Angular.js**. Permette di visualizzare dati in real-time e dati storici di sensori simulati associati un certo *tenant*.
