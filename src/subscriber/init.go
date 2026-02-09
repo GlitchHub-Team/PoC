@@ -12,13 +12,13 @@ import (
 	"sync"
 	"syscall"
 
-	sensor "gateway/sensorData"
 	dbaccess "subscriber/db-access"
+	sensor "subscriber/sensorData"
 
 	"github.com/nats-io/nats.go"
 )
 
-func InitSubscriber(natsURL string, consumerId string, credsPath string, wg *sync.WaitGroup) {
+func InitSubscriber(natsURL string, consumerId string, credsPath string, dbURL string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	nc, err := getNatsConnection(natsURL, "glitchhubteam.it", credsPath)
@@ -32,7 +32,7 @@ func InitSubscriber(natsURL string, consumerId string, credsPath string, wg *syn
 		log.Fatalf("Errore creazione contesto JetStream: %v", err)
 	}
 
-	start(&js, consumerId)
+	start(&js, consumerId, dbURL)
 	nc.Drain()
 }
 
@@ -123,7 +123,7 @@ func getNatsConnection(natsURL string, servername string, credsPath string) (*na
 	return nc, nil
 }
 
-func start(js *nats.JetStreamContext, consumerId string) {
+func start(js *nats.JetStreamContext, consumerId string, dbURL string) {
 	queueName := "sensor-subscribers"
 	subject := "sensors.>"
 	sigCh := make(chan os.Signal, 1)
@@ -150,7 +150,7 @@ func start(js *nats.JetStreamContext, consumerId string) {
 				msg.Nak()
 				return
 			}
-			err = dbaccess.InsertHeartRateData(tenantId, tablename, gatewayId, hrData)
+			err = dbaccess.InsertHeartRateData(tenantId, tablename, gatewayId, hrData, dbURL)
 			if err != nil {
 				fmt.Printf("Errore nell'inserimento dei dati di Heart Rate nel database: %v\n", err)
 				return
@@ -162,7 +162,7 @@ func start(js *nats.JetStreamContext, consumerId string) {
 				fmt.Printf("Errore nel parsing dei dati di SpO2: %v\n", err)
 				return
 			}
-			err = dbaccess.InsertSpO2Data(tenantId, tablename, gatewayId, spO2Data)
+			err = dbaccess.InsertSpO2Data(tenantId, tablename, gatewayId, spO2Data, dbURL)
 			if err != nil {
 				fmt.Printf("Errore nell'inserimento dei dati di SpO2 nel database: %v\n", err)
 				msg.Nak()

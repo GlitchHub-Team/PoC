@@ -1,10 +1,12 @@
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine
-RUN apk add go
+FROM golang:1.24.3-alpine
 
-WORKDIR /app/pub/
+WORKDIR /app
+
 COPY go.mod go.sum ./
-COPY . .
-# RUN go mod download
+RUN go mod download
 
-# EXPOSE 4222
-ENTRYPOINT ["go", "run", "."]
+COPY . .
+
+RUN go build -o publisher main.go
+
+CMD ["./publisher", "--nats-url", "glitchhubteam.it:4222"]
