@@ -3,8 +3,7 @@ package dbaccess
 import (
 	"context"
 	"fmt"
-
-	sensor "gateway/sensorData"
+	sensor "subscriber/sensorData"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -13,13 +12,13 @@ func isSupportedTablename(tablename string) bool {
 	return tablename == "heart_rate" || tablename == "blood_oxygen"
 }
 
-func InsertHeartRateData(tenantId string, tablename string, gatewayId string, hrData sensor.HearthRateData) error {
+func InsertHeartRateData(tenantId string, tablename string, gatewayId string, hrData sensor.HearthRateData, dbURL string) error {
 	if !isSupportedTablename(tablename) {
 		return fmt.Errorf("Tabella non supportata: %s", tablename)
 	}
 
 	tenantUsername := fmt.Sprintf("%s_user", tenantId)
-	urlExample := fmt.Sprintf("postgres://%s:user@localhost:5432/sensors_db?sslmode=disable", tenantUsername)
+	urlExample := fmt.Sprintf("postgres://%s:user@%s/sensors_db?sslmode=disable", tenantUsername, dbURL)
 	conn, err := pgx.Connect(context.Background(), urlExample)
 	if err != nil {
 		return fmt.Errorf("impossibile connettersi al database: %v", err)
@@ -35,13 +34,13 @@ func InsertHeartRateData(tenantId string, tablename string, gatewayId string, hr
 	return nil
 }
 
-func InsertSpO2Data(tenantId string, tablename string, gatewayId string, spO2Data sensor.PulseOxData) error {
+func InsertSpO2Data(tenantId string, tablename string, gatewayId string, spO2Data sensor.PulseOxData, dbURL string) error {
 	if !isSupportedTablename(tablename) {
 		return fmt.Errorf("Tabella non supportata: %s", tablename)
 	}
 
 	tenantUsername := fmt.Sprintf("%s_user", tenantId)
-	urlExample := fmt.Sprintf("postgres://%s:user@localhost:5432/sensors_db", tenantUsername)
+	urlExample := fmt.Sprintf("postgres://%s:user@%s/sensors_db?sslmode=disable", tenantUsername, dbURL)
 	conn, err := pgx.Connect(context.Background(), urlExample)
 	if err != nil {
 		return fmt.Errorf("impossibile connettersi al database: %v", err)

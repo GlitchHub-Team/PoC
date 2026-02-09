@@ -5,10 +5,7 @@ go 1.24.3
 require (
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/nats-io/nats.go v1.48.0
-	gateway v0.0.0
 )
-
-replace gateway => ../publisher
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect

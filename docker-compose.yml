@@ -38,7 +38,36 @@ services:
     volumes:
       - ./database/timescale-data:/var/lib/postgresql/data
     networks:
+      poc-net:
+        aliases:
+          - timescaledb
+
+  publisher:
+    build:
+      context: ./src/publisher
+      dockerfile: Dockerfile
+    container_name: publisher
+    depends_on:
+      - nats
+    networks:
       - poc-net
+    volumes:
+      - ./src/publisher/certs/ca.pem:/app/certs/ca.pem
+      - ./src/publisher/dataconsumer.creds:/app/dataconsumer.creds
+
+  subscriber:
+    build:
+      context: ./src/subscriber
+      dockerfile: Dockerfile
+    container_name: subscriber
+    depends_on:
+      - nats
+      - timescaledb
+    networks:
+      - poc-net
+    volumes:
+      - ./src/subscriber/certs/ca.pem:/app/certs/ca.pem
+      - ./src/subscriber/dataconsumer.creds:/app/dataconsumer.creds
     
   dashboard-backend:
     build:
