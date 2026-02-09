@@ -13,11 +13,8 @@ export class TenantService {
 
   // === SIGNALS PRIVATI (stato interno modificabile) ===
   
-  // Lista dei tenant recuperati dal backend
   private tenantsSignal = signal<Tenant[]>([]);
-  // Flag per indicare se è in corso un caricamento
   private loadingSignal = signal<boolean>(false);
-  // Messaggio di errore in caso di fallimento della chiamata
   private errorSignal = signal<string | null>(null);
 
   // === SIGNALS PUBBLICI IN SOLA LETTURA ===
@@ -29,10 +26,8 @@ export class TenantService {
 
   // === COMPUTED SIGNALS ===
   // Valori derivati calcolati automaticamente quando cambiano i signals sorgente
-  
-  // Indica se esistono tenant nella lista
+
   readonly hasTenants = computed(() => this.tenantsSignal().length > 0);
-  // Numero totale di tenant disponibili
   readonly tenantCount = computed(() => this.tenantsSignal().length);
 
   // Iniezione del client HTTP per le chiamate al backend

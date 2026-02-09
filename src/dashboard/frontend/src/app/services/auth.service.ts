@@ -20,10 +20,8 @@ export class AuthService {
   private router = inject(Router);
 
   // === SIGNALS PRIVATI (stato interno modificabile) ===
-  
-  // Dati dell'utente attualmente autenticato (null se non loggato)
+
   private currentUserSignal = signal<User | null>(null);
-  // Token JWT per l'autenticazione delle richieste API
   private tokenSignal = signal<string | null>(null);
 
   // === SIGNALS PUBBLICI IN SOLA LETTURA ===
@@ -35,13 +33,9 @@ export class AuthService {
   // === COMPUTED SIGNALS ===
   // Valori derivati che si aggiornano automaticamente
   
-  // True se l'utente è autenticato (presenza del token)
   readonly isAuthenticated = computed(() => !!this.tokenSignal());
-  // Username dell'utente corrente, stringa vuota se non loggato
   readonly userName = computed(() => this.currentUserSignal()?.username ?? '');
-  // Oggetto tenant associato all'utente
   readonly userTenant = computed(() => this.currentUserSignal()?.tenant ?? null);
-  // Nome del tenant per visualizzazione in UI
   readonly tenantName = computed(() => this.currentUserSignal()?.tenant?.name ?? 'Nessun Tenant');
 
   constructor() {

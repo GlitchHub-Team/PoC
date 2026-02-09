@@ -30,24 +30,16 @@ export class SensorDataService implements OnDestroy {
 
   // === SIGNALS - STATO WEBSOCKET (dati real-time) ===
   
-  // Sensore attualmente selezionato per la visualizzazione
   private selectedSensorSignal = signal<Sensor | null>(null);
-  // Buffer delle letture live ricevute via WebSocket
   private liveReadingsSignal = signal<SensorReading[]>([]); 
-  // Stato della connessione WebSocket
   private wsConnectedSignal = signal<boolean>(false);
-  // Eventuale errore WebSocket da mostrare all'utente
   private wsErrorSignal = signal<string | null>(null);
-  // Riferimento all'istanza WebSocket per gestione connessione
   private socket: WebSocket | null = null;
 
   // === SIGNALS - STATO DATI STORICI (HTTP) ===
-  
-  // Array delle letture storiche recuperate dal backend
+
   private historicReadingsSignal = signal<SensorReading[]>([]);
-  // Flag di caricamento per mostrare spinner/skeleton
   private historicLoadingSignal = signal<boolean>(false);
-  // Eventuale errore nel caricamento dati storici
   private historicErrorSignal = signal<string | null>(null);
 
   // === COMPUTED SIGNALS ===
@@ -66,14 +58,10 @@ export class SensorDataService implements OnDestroy {
   // Esposti ai componenti per binding reattivo e alimentazione grafici Chart.js
   
   readonly selectedSensor = this.selectedSensorSignal.asReadonly();
-  // Array di letture per il dataset del grafico live
   readonly liveReadings = this.liveReadingsSignal.asReadonly();    
-  // Ultimo valore per display in tempo reale
   readonly latestReading = this.latestReadingSignal;               
-  // Stato connessione per indicatore visivo
   readonly wsConnected = this.wsConnectedSignal.asReadonly();
   readonly wsError = this.wsErrorSignal.asReadonly();
-  // Array di letture per il dataset del grafico storico
   readonly historicReadings = this.historicReadingsSignal.asReadonly();
   readonly historicLoading = this.historicLoadingSignal.asReadonly();
   readonly historicError = this.historicErrorSignal.asReadonly();
@@ -81,6 +69,8 @@ export class SensorDataService implements OnDestroy {
   /**
    * Effettua il parsing della stringa subject per estrarre tenant, gateway e tipo sensore.
    * Formato atteso: sensors.{tenant_id}.{gateway}.{sensor_type}
+   * @param subject - soggetto del messaggio WebSocket ricevuto
+   * @returns - Tenant, gateway e tipo di sensore oggetto del WebSocket o null
    */
   private parseSubject(subject: string): { tenant: string; gateway: string; sensorType: string } | null {
     const parts = subject.split('.');
@@ -100,6 +90,9 @@ export class SensorDataService implements OnDestroy {
   /**
    * Estrae il valore numerico in base al tipo di sensore.
    * Ogni tipo di sensore ha campi specifici (es: bpm per heart_rate, spO2 per blood_oxygen).
+   * @param data - valore del reading ricevuto
+   * @param semsorType - tipologia del sensore ricevuto
+   * @returns - il valore del reading in formato numerico
    */
   private extractValue(data: any, sensorType: string): number {
     switch (sensorType) {
@@ -117,6 +110,8 @@ export class SensorDataService implements OnDestroy {
   /**
    * Effettua il parsing del messaggio WebSocket grezzo in una lettura strutturata.
    * Converte il JSON ricevuto nel formato interno SensorReading.
+   * @param raw - messaggio grezzo dal WebSocket
+   * @returns - reading del sensore adattato al formato interno o null
    */
   private parseMessage(raw: RawSensorReading): SensorReading | null {
     const subjectInfo = this.parseSubject(raw.subject);
@@ -143,6 +138,8 @@ export class SensorDataService implements OnDestroy {
   /**
    * Verifica se una lettura corrisponde al tipo di sensore selezionato.
    * Utilizzato per filtrare i messaggi WebSocket.
+   * @param reading - reading ricevuto dal WebSocket
+   * @returns - true se il reading riguarda il sensore selezionato, false altrimenti
    */
   private matchesSelectedSensor(reading: SensorReading): boolean {
     const selected = this.selectedSensorSignal();
@@ -153,6 +150,9 @@ export class SensorDataService implements OnDestroy {
 
 /**
  * Estrae il valore numerico dalla lettura storica in base al tipo di sensore.
+ * @param reading - reading ricevuto dalla lettura storica
+ * @param sensorType - tipologia del sensore per cui filtrare
+ * @returns - il valore numerico del reading ricevuto
  */
 private extractHistoricValue(reading: HistoricReading, sensorType: string): number {
   switch (sensorType) {
@@ -254,15 +254,12 @@ getHistoricData(sensor: Sensor, minutes: number = 60): void {
       return;
     }
 
-    // Costruisce URL WebSocket: ws://localhost:3000/ws/sensors/tenant_1
     const wsEndpoint = `${this.wsUrl}/ws/sensors/${tenant.natsId}`;
     console.log('Connessione a:', wsEndpoint);
     console.log('Filtro per tipo sensore:', sensor.sensorType);
 
     try {
       this.socket = new WebSocket(wsEndpoint);
-
-      // === GESTORI EVENTI WEBSOCKET ===
 
       this.socket.onopen = () => {
         console.log('WebSocket connesso');
