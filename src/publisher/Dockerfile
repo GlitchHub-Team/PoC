@@ -1,10 +1,10 @@
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine
 RUN apk add go
 
-WORKDIR /app/dashb
+WORKDIR /app/pub/
 COPY go.mod go.sum ./
 COPY . .
-RUN go mod download
+# RUN go mod download
 
-EXPOSE 3001
+# EXPOSE 4222
 ENTRYPOINT ["go", "run", "."]

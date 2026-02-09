@@ -146,7 +146,29 @@ services:
       - prometheus
     networks:
       - poc-net
-      
+  
+  nats-publisher:
+    build:
+      context: src/publisher
+      dockerfile: Dockerfile
+    container_name: nats-publisher
+
+    depends_on:
+      - nats
+    networks:
+      - poc-net
+  
+  nats-subscriber:
+    build:
+      context: src/subscriber
+      dockerfile: Dockerfile
+    container_name: nats-subscriber
+    depends_on:
+      - nats
+      - timescaledb
+    networks:
+      - poc-net
+
 networks:
   poc-net:
     driver: bridge
