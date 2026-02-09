@@ -1,6 +1,6 @@
 <div class="auth-container">
   <div class="auth-card">
-    <h2>Login</h2>
+    <h2>Accedi</h2>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
@@ -12,9 +12,9 @@
           [disabled]="isLoadingTenants()"
         >
           @if (isLoadingTenants()) {
-            <option value="">Loading tenants...</option>
+            <option value="">Caricamento tenants...</option>
           } @else if (tenantError()) {
-            <option value="">Error loading tenants</option>
+            <option value="">Errore nel caricamento dei tenants</option>
           } @else {
             <option value="">Select your tenant</option>
             @for (tenant of tenants(); track tenant.id) {
@@ -26,7 +26,7 @@
         </select>
 
         @if (loginForm.get('TenantID')?.invalid && loginForm.get('TenantID')?.touched) {
-          <span class="error-message">Please select an tenant</span>
+          <span class="error-message">Devi selezionare un tenant</span>
         }
 
         @if (tenantError()) {
@@ -41,15 +41,13 @@
           type="text"
           id="Username"
           formControlName="Username"
-          placeholder="Enter your username"
+          placeholder="Username"
           [class.error]="loginForm.get('Username')?.invalid && loginForm.get('Username')?.touched"
         />
 
         @if (loginForm.get('Username')?.touched) {
           @if (loginForm.get('Username')?.hasError('required')) {
-            <span class="error-message">Username is required</span>
-          } @else if (loginForm.get('Username')?.hasError('minlength')) {
-            <span class="error-message">Username must be at least 3 characters</span>
+            <span class="error-message">Devi inserire lo username</span>
           }
         }
       </div>
@@ -60,7 +58,7 @@
           type="password"
           id="Password"
           formControlName="Password"
-          placeholder="Enter your password"
+          placeholder="Password"
           [class.error]="loginForm.get('Password')?.invalid && loginForm.get('Password')?.touched"
         />
         <!-- SE VOGLIAMO INSERIRE ERRORI, ES MIN LENGTH PER PSWD O USERNAME
@@ -83,13 +81,13 @@
       <button type="submit" [disabled]="loginForm.invalid || isSubmitting() || isLoadingTenants()">
         @if (isSubmitting()) {
           <span class="spinner"></span>
-          Logging in...
+          Accesso in corso...
         } @else {
-          Login
+          Accedi
         }
       </button>
     </form>
 
-    <p class="auth-link">Don't have an account? <a routerLink="/register">Register</a></p>
+    <p class="auth-link">Non hai un account? <a routerLink="/register">Registrati</a></p>
   </div>
 </div>
