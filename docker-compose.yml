@@ -35,8 +35,11 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
       - POSTGRES_DB=sensors_db
+      - PGDATA=/var/lib/postgresql/data
     volumes:
-      - ./database/timescale-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+      - ./src/database/schema/tables.sql:/root/schema/tables.sql
+      - ./src/database/setup.sh:/root/setup.sh
     networks:
       - poc-net
     
@@ -175,3 +178,4 @@ networks:
 
 volumes:
   grafana-data:
+  pgdata:

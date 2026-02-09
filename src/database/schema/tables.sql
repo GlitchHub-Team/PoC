@@ -3,13 +3,13 @@ CREATE EXTENSION IF NOT EXISTS timescaledb;
 CREATE SCHEMA IF NOT EXISTS tenant_1;
 CREATE SCHEMA IF NOT EXISTS tenant_2;
 
-CREATE TABLE tenant_1.heart_rate (
+CREATE TABLE IF NOT EXISTS tenant_1.heart_rate (
     time        TIMESTAMPTZ       NOT NULL,
     gateway_id  VARCHAR           NOT NULL,
     bpm         INTEGER           NOT NULL CHECK (bpm > 0)
 );
 
-CREATE TABLE tenant_1.blood_oxygen (
+CREATE TABLE IF NOT EXISTS tenant_1.blood_oxygen (
     time        TIMESTAMPTZ       NOT NULL,
     gateway_id  VARCHAR           NOT NULL,
     spo2        NUMERIC(5,2)      NOT NULL CHECK (spo2 >= 0 AND spo2 <= 100)
@@ -20,13 +20,13 @@ SELECT create_hypertable('tenant_1.heart_rate', 'time');
 
 SELECT create_hypertable('tenant_1.blood_oxygen', 'time');
 
-CREATE TABLE tenant_2.heart_rate (
+CREATE TABLE IF NOT EXISTS tenant_2.heart_rate (
     time        TIMESTAMPTZ       NOT NULL,
     gateway_id  VARCHAR           NOT NULL,
     bpm         INTEGER           NOT NULL CHECK (bpm > 0)
 );
 
-CREATE TABLE tenant_2.blood_oxygen (
+CREATE TABLE IF NOT EXISTS tenant_2.blood_oxygen (
     time        TIMESTAMPTZ       NOT NULL,
     gateway_id  VARCHAR           NOT NULL,
     spo2        NUMERIC(5,2)      NOT NULL CHECK (spo2 >= 0 AND spo2 <= 100)

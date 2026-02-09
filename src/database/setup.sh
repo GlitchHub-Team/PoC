@@ -1,0 +1,1 @@
+psql -U admin -d sensors_db -f /root/schema/tables.sql
