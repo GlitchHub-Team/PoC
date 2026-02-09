@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<body>
+<button onclick="start()">Connetti</button>
+<button onclick="ws&&ws.close()">Stop</button>
+<pre id="log"></pre>
+<script>
+    let ws;
+    function start() {
+        ws = new WebSocket('ws://localhost:3000/ws/sensors/tenant_1');
+        ws.onmessage = (e) => {
+            document.getElementById('log').textContent += e.data + '\n';
+        };
+    }
+</script>
+</body>
+</html>

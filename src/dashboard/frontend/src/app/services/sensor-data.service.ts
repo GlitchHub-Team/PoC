@@ -1,0 +1,370 @@
+import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { tap, catchError, of } from 'rxjs';
+import { HistoricReading, HistoryApiResponse, RawSensorReading, Sensor, SensorReading } from '../models/sensor.model';
+import { Tenant } from '../models/tenant.model';
+import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class SensorDataService implements OnDestroy {
+  // Iniezione dipendenze
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+  
+  // URL delle API REST e WebSocket dalla configurazione environment
+  private apiUrl = `${environment.apiUrl}`;
+  private wsUrl = `${environment.wsUrl}`;
+
+  // === CONFIGURAZIONE BUFFER DATI LIVE ===
+  
+  /**
+   * Numero massimo di letture da mantenere in memoria per i dati live.
+   * Implementa una "sliding window" per evitare consumo eccessivo di memoria
+   * durante lo streaming prolungato. Con letture ogni secondo, 60 = 1 minuto di dati.
+   * Questo valore determina anche quanti punti saranno visibili nel grafico live.
+   */
+  private readonly MAX_LIVE_READINGS = 60;
+
+  // === SIGNALS - STATO WEBSOCKET (dati real-time) ===
+  
+  private selectedSensorSignal = signal<Sensor | null>(null);
+  private liveReadingsSignal = signal<SensorReading[]>([]); 
+  private wsConnectedSignal = signal<boolean>(false);
+  private wsErrorSignal = signal<string | null>(null);
+  private socket: WebSocket | null = null;
+
+  // === SIGNALS - STATO DATI STORICI (HTTP) ===
+
+  private historicReadingsSignal = signal<SensorReading[]>([]);
+  private historicLoadingSignal = signal<boolean>(false);
+  private historicErrorSignal = signal<string | null>(null);
+
+  // === COMPUTED SIGNALS ===
+  
+  /**
+   * Estrae l'ultima lettura ricevuta dal buffer live.
+   * Utile per visualizzare il valore corrente in tempo reale
+   * insieme al grafico storico.
+   */
+  private latestReadingSignal = computed(() => {
+    const readings = this.liveReadingsSignal();
+    return readings.length > 0 ? readings[readings.length - 1] : null;
+  });
+
+  // === SIGNALS PUBBLICI IN SOLA LETTURA ===
+  // Esposti ai componenti per binding reattivo e alimentazione grafici Chart.js
+  
+  readonly selectedSensor = this.selectedSensorSignal.asReadonly();
+  readonly liveReadings = this.liveReadingsSignal.asReadonly();    
+  readonly latestReading = this.latestReadingSignal;               
+  readonly wsConnected = this.wsConnectedSignal.asReadonly();
+  readonly wsError = this.wsErrorSignal.asReadonly();
+  readonly historicReadings = this.historicReadingsSignal.asReadonly();
+  readonly historicLoading = this.historicLoadingSignal.asReadonly();
+  readonly historicError = this.historicErrorSignal.asReadonly();
+
+  /**
+   * Effettua il parsing della stringa subject per estrarre tenant, gateway e tipo sensore.
+   * Formato atteso: sensors.{tenant_id}.{gateway}.{sensor_type}
+   * @param subject - soggetto del messaggio WebSocket ricevuto
+   * @returns - Tenant, gateway e tipo di sensore oggetto del WebSocket o null
+   */
+  private parseSubject(subject: string): { tenant: string; gateway: string; sensorType: string } | null {
+    const parts = subject.split('.');
+    
+    if (parts.length !== 4 || parts[0] !== 'sensors') {
+      console.warn('Formato subject non valido:', subject);
+      return null;
+    }
+
+    return {
+      tenant: parts[1],   
+      gateway: parts[2],   
+      sensorType: parts[3] 
+    };
+  }
+
+  /**
+   * Estrae il valore numerico in base al tipo di sensore.
+   * Ogni tipo di sensore ha campi specifici (es: bpm per heart_rate, spO2 per blood_oxygen).
+   * @param data - valore del reading ricevuto
+   * @param semsorType - tipologia del sensore ricevuto
+   * @returns - il valore del reading in formato numerico
+   */
+  private extractValue(data: any, sensorType: string): number {
+    switch (sensorType) {
+      case 'heart_rate':
+        return data.bpm ?? 0;
+      case 'blood_oxygen':
+        return data.spO2 ?? 0;
+      default:
+        // Tenta di trovare qualsiasi valore numerico
+        const numericValue = Object.values(data).find(v => typeof v === 'number');
+        return (numericValue as number) ?? 0;
+    }
+  }
+
+  /**
+   * Effettua il parsing del messaggio WebSocket grezzo in una lettura strutturata.
+   * Converte il JSON ricevuto nel formato interno SensorReading.
+   * @param raw - messaggio grezzo dal WebSocket
+   * @returns - reading del sensore adattato al formato interno o null
+   */
+  private parseMessage(raw: RawSensorReading): SensorReading | null {
+    const subjectInfo = this.parseSubject(raw.subject);
+    if (!subjectInfo) return null;
+
+    try {
+      const data = JSON.parse(raw.data);
+      const value = this.extractValue(data, subjectInfo.sensorType);
+
+      return {
+        tenant: subjectInfo.tenant,
+        gateway: subjectInfo.gateway,
+        sensorType: subjectInfo.sensorType,
+        data: data,
+        value: value,
+        timestamp: new Date(raw.timestamp)
+      };
+    } catch (e) {
+      console.error('Errore nel parsing dei dati del messaggio:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Verifica se una lettura corrisponde al tipo di sensore selezionato.
+   * Utilizzato per filtrare i messaggi WebSocket.
+   * @param reading - reading ricevuto dal WebSocket
+   * @returns - true se il reading riguarda il sensore selezionato, false altrimenti
+   */
+  private matchesSelectedSensor(reading: SensorReading): boolean {
+    const selected = this.selectedSensorSignal();
+    if (!selected) return false;
+
+    return reading.sensorType === selected.sensorType;
+  }
+
+/**
+ * Estrae il valore numerico dalla lettura storica in base al tipo di sensore.
+ * @param reading - reading ricevuto dalla lettura storica
+ * @param sensorType - tipologia del sensore per cui filtrare
+ * @returns - il valore numerico del reading ricevuto
+ */
+private extractHistoricValue(reading: HistoricReading, sensorType: string): number {
+  switch (sensorType) {
+    case 'heart_rate':
+      return reading['bpm'] ?? 0;
+    case 'blood_oxygen':
+      return reading['spo2'] ?? 0;
+    default:
+      // Cerca qualsiasi valore numerico escludendo time e gateway_id
+      const numericKeys = Object.keys(reading).filter(
+        k => k !== 'time' && k !== 'gateway_id' && typeof reading[k] === 'number'
+      );
+      return numericKeys.length > 0 ? reading[numericKeys[0]] : 0;
+  }
+}
+
+/**
+ * Trasforma i dati storici del backend nel formato SensorReading.
+ */
+private transformHistoricData(
+  readings: HistoricReading[], 
+  sensor: Sensor,
+  tenantId: number
+): SensorReading[] {
+  return readings.map(reading => ({
+    tenant: `tenant_${tenantId}`,
+    gateway: reading.gateway_id,
+    sensorType: sensor.sensorType,
+    data: reading,
+    value: this.extractHistoricValue(reading, sensor.sensorType),
+    timestamp: new Date(reading.time)
+  }));
+}
+
+/**
+ * Recupera dati storici dall'API.
+ */
+getHistoricData(sensor: Sensor, minutes: number = 60): void {
+  this.clearAll();
+
+  this.selectedSensorSignal.set(sensor);
+  this.historicLoadingSignal.set(true);
+  this.historicErrorSignal.set(null);
+
+  const tenant = this.authService.userTenant();
+  if (!tenant?.id) {
+    console.error('ID tenant non disponibile');
+    this.historicErrorSignal.set('Tenant non configurato');
+    this.historicLoadingSignal.set(false);
+    return;
+  }
+
+  const readingsPerMinute = 12;
+  const limit = minutes * readingsPerMinute;
+
+  const params = new HttpParams()
+    .set('tenant_id', tenant.natsId.toString())  
+    .set('metric', sensor.sensorType)         
+    .set('limit', limit.toString());          
+
+  this.http.get<HistoryApiResponse>(`${this.apiUrl}/history`, { params })
+    .pipe(
+      tap((response) => {
+        const readings = this.transformHistoricData(
+          response.data, 
+          sensor, 
+          tenant.id
+        );
+        this.historicReadingsSignal.set(readings);
+        this.historicLoadingSignal.set(false);
+      }),
+      catchError((err) => {
+        console.error('Errore nel caricamento dati storici:', err);
+        this.historicErrorSignal.set('Errore nel caricamento dati storici');
+        this.historicLoadingSignal.set(false);
+        return of({ data: [], count: 0 });
+      })
+    )
+    .subscribe();
+}
+
+  /**
+   * Stabilisce connessione WebSocket e filtra per il sensore specificato.
+   * I messaggi ricevuti vengono filtrati in base al tipo di sensore selezionato.
+   */
+  connectToSensor(sensor: Sensor): void {
+    // Pulisci connessioni e dati precedenti
+    this.clearAll();
+
+    // Imposta sensore selezionato e inizializza buffer vuoto
+    this.selectedSensorSignal.set(sensor);
+    this.liveReadingsSignal.set([]);
+
+    // Recupera natsId del tenant dal servizio di autenticazione
+    const tenant = this.authService.userTenant();
+    if (!tenant?.natsId) {
+      console.error('natsId del tenant non disponibile');
+      this.wsErrorSignal.set('Tenant non configurato');
+      return;
+    }
+
+    const wsEndpoint = `${this.wsUrl}/ws/sensors/${tenant.natsId}`;
+    console.log('Connessione a:', wsEndpoint);
+    console.log('Filtro per tipo sensore:', sensor.sensorType);
+
+    try {
+      this.socket = new WebSocket(wsEndpoint);
+
+      this.socket.onopen = () => {
+        console.log('WebSocket connesso');
+        this.wsConnectedSignal.set(true);
+        this.wsErrorSignal.set(null);
+      };
+
+      // Ricezione nuovo messaggio (lettura sensore)
+      this.socket.onmessage = (event) => {
+        try {
+          // Parse del JSON grezzo dal server
+          const raw: RawSensorReading = JSON.parse(event.data);
+          
+          // Trasforma in lettura strutturata
+          const parsed = this.parseMessage(raw);
+          if (!parsed) {
+            console.warn('Impossibile effettuare il parsing del messaggio:', raw);
+            return;
+          }
+
+          // Filtro: elabora solo messaggi del tipo di sensore selezionato
+          if (this.matchesSelectedSensor(parsed)) {
+            this.addReading(parsed);
+          }
+        } catch (e) {
+          console.error('Errore nel parsing del messaggio WebSocket:', e);
+        }
+      };
+
+      this.socket.onerror = (error) => {
+        console.error('Errore WebSocket:', error);
+        this.wsErrorSignal.set('Errore di connessione');
+      };
+
+      // Connessione chiusa
+      this.socket.onclose = (event) => {
+        console.log('WebSocket chiuso:', event.code, event.reason);
+        this.wsConnectedSignal.set(false);
+
+        // Se la chiusura non è stata pulita, segnala perdita connessione
+        if (!event.wasClean) {
+          this.wsErrorSignal.set('Connessione persa');
+        }
+      };
+    } catch (error) {
+      // Errore nella creazione del WebSocket (es: URL malformato)
+      console.error('Impossibile creare WebSocket:', error);
+      this.wsErrorSignal.set('Connessione fallita');
+    }
+  }
+
+  /**
+   * Aggiunge una nuova lettura al buffer live implementando una sliding window.
+   * Quando il buffer supera MAX_LIVE_READINGS, rimuove le letture più vecchie.
+   * Questo garantisce un consumo di memoria costante durante streaming prolungati
+   * e mantiene il grafico scorrevole con gli ultimi N valori.
+   * 
+   * @param reading - Nuova lettura da aggiungere al buffer
+   */
+  private addReading(reading: SensorReading): void {
+    this.liveReadingsSignal.update(readings => {
+      // Aggiunge la nuova lettura alla fine dell'array
+      const updated = [...readings, reading];
+      if (updated.length > this.MAX_LIVE_READINGS) {
+        return updated.slice(-this.MAX_LIVE_READINGS);
+      }
+      return updated;
+    });
+  }
+
+  /**
+   * Disconnette il WebSocket e resetta lo stato relativo ai dati live.
+   * Da chiamare quando si cambia sensore o si esce dalla vista live.
+   */
+  disconnect(): void {
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
+
+    this.wsConnectedSignal.set(false);
+    this.wsErrorSignal.set(null);
+    this.selectedSensorSignal.set(null);
+    this.liveReadingsSignal.set([]);
+  }
+
+  /**
+   * Resetta completamente lo stato del servizio.
+   * Chiamato prima di passare da modalità live a storica (e viceversa)
+   * per garantire che non ci siano dati residui o connessioni aperte.
+   */
+  private clearAll(): void {
+    this.disconnect();
+
+    this.historicReadingsSignal.set([]);
+    this.historicLoadingSignal.set(false);
+    this.historicErrorSignal.set(null);
+  }
+
+  /**
+   * Lifecycle hook di Angular: chiamato quando il servizio viene distrutto.
+   * Garantisce la chiusura pulita delle connessioni WebSocket
+   * per evitare memory leaks.
+   */
+  ngOnDestroy(): void {
+    this.clearAll();
+  }
+}

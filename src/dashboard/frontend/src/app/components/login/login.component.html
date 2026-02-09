@@ -1,0 +1,93 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h2>Accedi</h2>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="TenantID">Tenant</label>
+        <select
+          id="TenantID"
+          formControlName="TenantID"
+          [class.error]="loginForm.get('TenantID')?.invalid && loginForm.get('TenantID')?.touched"
+          [disabled]="isLoadingTenants()"
+        >
+          @if (isLoadingTenants()) {
+            <option value="">Caricamento tenants...</option>
+          } @else if (tenantError()) {
+            <option value="">Errore nel caricamento dei tenants</option>
+          } @else {
+            <option value="">Seleziona il tenant</option>
+            @for (tenant of tenants(); track tenant.id) {
+              <option [value]="tenant.id">
+                {{ tenant.name }}
+              </option>
+            }
+          }
+        </select>
+
+        @if (loginForm.get('TenantID')?.invalid && loginForm.get('TenantID')?.touched) {
+          <span class="error-message">Devi selezionare un tenant</span>
+        }
+
+        @if (tenantError()) {
+          <span class="error-message">{{ tenantError() }}</span>
+          <button type="button" class="retry-btn" (click)="retryLoadTenants()">Retry</button>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="Username">Username</label>
+        <input
+          type="text"
+          id="Username"
+          formControlName="Username"
+          placeholder="Username"
+          [class.error]="loginForm.get('Username')?.invalid && loginForm.get('Username')?.touched"
+        />
+
+        @if (loginForm.get('Username')?.touched) {
+          @if (loginForm.get('Username')?.hasError('required')) {
+            <span class="error-message">Devi inserire lo username</span>
+          }
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="Password">Password</label>
+        <input
+          type="password"
+          id="Password"
+          formControlName="Password"
+          placeholder="Password"
+          [class.error]="loginForm.get('Password')?.invalid && loginForm.get('Password')?.touched"
+        />
+        <!-- SE VOGLIAMO INSERIRE ERRORI, ES MIN LENGTH PER PSWD O USERNAME
+        @if (loginForm.get('Password')?.touched) {
+          @if (loginForm.get('Password')?.hasError('required')) {
+            <span class="error-message">Password is required</span>
+          } @else if (loginForm.get('Password')?.hasError('minlength')) {
+            <span class="error-message">Password must be at least 6 characters</span>
+          }
+        }
+        -->
+      </div>
+
+      @if (submitError()) {
+        <div class="error-message server-error">
+          {{ submitError() }}
+        </div>
+      }
+
+      <button type="submit" [disabled]="loginForm.invalid || isSubmitting() || isLoadingTenants()">
+        @if (isSubmitting()) {
+          <span class="spinner"></span>
+          Accesso in corso...
+        } @else {
+          Accedi
+        }
+      </button>
+    </form>
+
+    <p class="auth-link">Non hai un account? <a routerLink="/register">Registrati</a></p>
+  </div>
+</div>
