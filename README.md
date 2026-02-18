@@ -1,5 +1,5 @@
-# PoC
-Repository principale del Proof of Concept di GlitchHub Team.
+# PoC - Sistema di acquisizione dati da sensori
+Repository principale del Proof of Concept del progetto proposto da **M31 Srl** nel capitolato ["C7 - Sistema di acquisizione dati da sensori"](https://www.math.unipd.it/~tullio/IS-1/2025/Progetto/C7.pdf).
 
 ## Prerequisiti
 - Avere [Docker](https://www.docker.com/get-started/) installato nel proprio sistema
